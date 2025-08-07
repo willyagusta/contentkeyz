@@ -1,43 +1,44 @@
+'use client';
+
 import '@rainbow-me/rainbowkit/styles.css';
 import {
   getDefaultWallets,
   RainbowKitProvider,
 } from '@rainbow-me/rainbowkit';
-import {
-  configureChains,
-  createConfig,
-  WagmiConfig
-} from 'wagmi';
+import { WagmiProvider, createConfig, http } from 'wagmi';
 import {
   mainnet,
   polygon,
   base
 } from 'wagmi/chains';
-import { publicProvider } from 'wagmi/providers/public';
-
-const { chains, publicClient } = configureChains(
-    [base, mainnet, polygon],
-    [publicProvider()]
-);
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { connectors } = getDefaultWallets({
     appName: 'ContentKeyz',
     projectId: 'placeholder for project id',
-    chains,
+    chains: [base, mainnet, polygon],
 });
 
 const wagmiConfig = createConfig({
-    autoConnect: true,
+    chains: [base, mainnet, polygon],
     connectors,
-    publicClient,
+    transports: {
+        [mainnet.id]: http(),
+        [polygon.id]: http(),
+        [base.id]: http(),
+    },
 });
+
+const queryClient = new QueryClient();
 
 export function WalletProvider({ children }) {
     return (
-        <WagmiConfig config={wagmiConfig}>
-            <RainbowKitProvider chains={chains}>
-                {children}
-            </RainbowKitProvider>
-        </WagmiConfig>
+        <WagmiProvider config={wagmiConfig}>
+            <QueryClientProvider client={queryClient}>
+                <RainbowKitProvider>
+                    {children}
+                </RainbowKitProvider>
+            </QueryClientProvider>
+        </WagmiProvider>
     );
 }
