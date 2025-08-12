@@ -1,13 +1,28 @@
-const { ethers } = require("hardhat");
+const hre = require("hardhat");
 
 async function deploy() {
-    const TokenGatedAccess = await ethers.getContractFactory("TokenGatedAccess");
-    const contract = await TokenGatedAccess.deploy(ethers.parseEther("0.01"));
-    await contract.waitForDeployment();
-    console.log("The contract is deployed to: ", await contract.getAddress());
+  console.log("Deploying AccessUnlock contract...");
+
+  const [deployer] = await hre.ethers.getSigners();
+  console.log("Deploying with account:", deployer.address);
+
+  const AccessUnlock = await hre.ethers.getContractFactory("AccessUnlock");
+  const accessUnlock = await AccessUnlock.deploy();
+
+  await accessUnlock.waitForDeployment();
+  const address = await accessUnlock.getAddress();
+
+  console.log("AccessUnlock deployed to:", address);
+  
+  // Save deployment info
+  console.log("Contract name: AccessUnlock");
+  console.log("Network:", hre.network.name);
+  console.log("Deployer:", deployer.address);
 }
 
-deploy().catch((error) => {
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
     console.error(error);
-    process.exitCode = 1;
-})
+    process.exit(1);
+  });
