@@ -21,24 +21,39 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
         bool isActive;
         uint256 createdAt;
         string previewHash;
+        uint256 totalEarnings;
+        uint256 totalSales;
+    }
+
+    struct CreatorStats {
+        uint256 totalEarnings;
+        uint256 totalSales;
+        uint256 activeContent;
+        uint256 lifetimeEarnings;
     }
 
     // State variables
     uint256 private _contentIds;
     uint256 private _tokenIds;
     uint256 public platformFeePercent = 250; // 2.5%
+    uint256 public totalPlatformEarnings;
     
     // Mappings
     mapping(uint256 => ContentItem) public content;
     mapping(address => mapping(uint256 => bool)) public hasAccess;
     mapping(address => uint256[]) public userContent;
     mapping(ContentType => uint256[]) public contentByType;
+    mapping(address => CreatorStats) public creatorStats;
+    mapping(address => uint256) public creatorEarnings;
     
     // Events
     event ContentCreated(uint256 indexed contentId, address indexed creator, ContentType contentType, string title);
     event AccessPurchased(address indexed buyer, uint256 indexed contentId, uint256 amount, uint256 tokenId);
     event ContentUpdated(uint256 indexed contentId, string title, uint256 price);
     event PreviewShared(uint256 indexed contentId, string previewHash);
+    event CreatorPaid(address indexed creator, uint256 contentId, uint256 amount, uint256 totalEarned);
+    event CreatorWithdrawal(address indexed creator, uint256 amount);
+    event RevenueStats(uint256 contentId, uint256 contentEarned, uint256 totalSales);
 
     constructor() ERC721("ContentKeyz", "CKZ") Ownable(msg.sender) {}
 
@@ -67,11 +82,15 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
             creator: msg.sender,
             isActive: true,
             createdAt: block.timestamp,
-            previewHash: _previewHash
+            previewHash: _previewHash,
+            totalEarnings: 0,
+            totalSales: 0
         });
 
         userContent[msg.sender].push(newContentId);
         contentByType[_contentType].push(newContentId);
+
+        creatorStats[msg.sender].activeContent++;
 
         emit ContentCreated(newContentId, msg.sender, _contentType, _title);
         
@@ -104,19 +123,42 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
             uint256 platformFee = (msg.value * platformFeePercent) / 10000;
             uint256 creatorPayment = msg.value - platformFee;
 
-            // Transfer to creator
-            if (creatorPayment > 0) {
-                payable(item.creator).transfer(creatorPayment);
-            }
+            // Update earnings tracking
+            item.totalEarnings += creatorPayment;
+            item.totalSales++;
+            
+            creatorStats[item.creator].totalEarnings += creatorPayment;
+            creatorStats[item.creator].totalSales++;
+            creatorStats[item.creator].lifetimeEarnings += creatorPayment;
+            creatorEarnings[item.creator] += creatorPayment;
+            
+            totalPlatformEarnings += platformFee;
 
-            // Transfer platform fee to owner
-            if (platformFee > 0) {
-                payable(owner()).transfer(platformFee);
-            }
+            // Transfer platform fee to contract (for later withdrawal by owner)
+            // Creator earnings accumulate in creatorEarnings mapping for withdrawal
+
+            emit CreatorPaid(item.creator, _contentId, creatorPayment, item.totalEarnings);
+            emit RevenueStats(_contentId, item.totalEarnings, item.totalSales);
         }
 
         emit AccessPurchased(msg.sender, _contentId, msg.value, newTokenId);
         return newTokenId;
+    }
+
+    // Creator withdrawal function
+    function withdrawEarnings() external nonReentrant {
+        uint256 amount = creatorEarnings[msg.sender];
+        require(amount > 0, "No earnings to withdraw");
+        
+        creatorEarnings[msg.sender] = 0;
+        
+        payable(msg.sender).transfer(amount);
+        emit CreatorWithdrawal(msg.sender, amount);
+    }
+
+    // Get creator earnings (available for withdrawal)
+    function getCreatorEarnings(address _creator) external view returns (uint256) {
+        return creatorEarnings[_creator];
     }
 
     function grantFreeAccess(uint256 _contentId, address _user) external {
@@ -154,6 +196,74 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
         item.isActive = _isActive;
 
         emit ContentUpdated(_contentId, _title, _price);
+    }
+
+    // Enhanced view functions for earnings
+    function getContentEarnings(uint256 _contentId) external view returns (uint256 totalEarnings, uint256 totalSales) {
+        ContentItem memory item = content[_contentId];
+        return (item.totalEarnings, item.totalSales);
+    }
+
+    function getCreatorStats(address _creator) external view returns (CreatorStats memory) {
+        return creatorStats[_creator];
+    }
+
+    function getCreatorRevenue(address _creator) external view returns (
+        uint256 availableEarnings,
+        uint256 lifetimeEarnings,
+        uint256 totalSales,
+        uint256 activeContentCount
+    ) {
+        CreatorStats memory stats = creatorStats[_creator];
+        return (
+            creatorEarnings[_creator],
+            stats.lifetimeEarnings,
+            stats.totalSales,
+            stats.activeContent
+        );
+    }
+
+    // Platform revenue analytics
+    function getPlatformRevenue() external view returns (
+        uint256 totalEarnings,
+        uint256 currentFeePercent,
+        uint256 totalContentSold
+    ) {
+        uint256 totalSales = 0;
+        for (uint256 i = 1; i <= _contentIds; i++) {
+            totalSales += content[i].totalSales;
+        }
+        
+        return (totalPlatformEarnings, platformFeePercent, totalSales);
+    }
+
+    // Get top earning content
+    function getTopEarningContent(uint256 limit) external view returns (uint256[] memory) {
+        require(limit > 0 && limit <= _contentIds, "Invalid limit");
+        
+        // Simple implementation
+        uint256[] memory topContent = new uint256[](limit);
+        uint256[] memory earnings = new uint256[](limit);
+        
+        for (uint256 i = 1; i <= _contentIds; i++) {
+            uint256 currentEarnings = content[i].totalEarnings;
+            
+            // Insert into sorted array
+            for (uint256 j = 0; j < limit; j++) {
+                if (currentEarnings > earnings[j]) {
+                    // Shift elements
+                    for (uint256 k = limit - 1; k > j; k--) {
+                        topContent[k] = topContent[k-1];
+                        earnings[k] = earnings[k-1];
+                    }
+                    topContent[j] = i;
+                    earnings[j] = currentEarnings;
+                    break;
+                }
+            }
+        }
+        
+        return topContent;
     }
 
     // View functions
@@ -204,10 +314,65 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
         return _tokenIds;
     }
 
+    // Frontend compatibility functions
+    function pricePerContent(uint256 _contentId) external view returns (uint256) {
+        return content[_contentId].price;
+    }
+
+    function buyAccess(uint256 _contentId) external payable nonReentrant returns (uint256) {
+        ContentItem storage item = content[_contentId];
+        require(item.isActive, "Content not active");
+        require(msg.value >= item.price, "Insufficient payment");
+        require(!hasAccess[msg.sender][_contentId], "Already has access");
+
+        hasAccess[msg.sender][_contentId] = true;
+
+        // Mint NFT as proof of access
+        _tokenIds++;
+        uint256 newTokenId = _tokenIds;
+        _mint(msg.sender, newTokenId);
+        
+        if (bytes(item.ipfsHash).length > 0) {
+            _setTokenURI(newTokenId, item.ipfsHash);
+        }
+
+        // Handle payment distribution
+        if (msg.value > 0) {
+            uint256 platformFee = (msg.value * platformFeePercent) / 10000;
+            uint256 creatorPayment = msg.value - platformFee;
+
+            // Update earnings tracking
+            item.totalEarnings += creatorPayment;
+            item.totalSales++;
+            
+            creatorStats[item.creator].totalEarnings += creatorPayment;
+            creatorStats[item.creator].totalSales++;
+            creatorStats[item.creator].lifetimeEarnings += creatorPayment;
+            creatorEarnings[item.creator] += creatorPayment;
+            
+            totalPlatformEarnings += platformFee;
+
+            emit CreatorPaid(item.creator, _contentId, creatorPayment, item.totalEarnings);
+            emit RevenueStats(_contentId, item.totalEarnings, item.totalSales);
+        }
+
+        emit AccessPurchased(msg.sender, _contentId, msg.value, newTokenId);
+        return newTokenId;
+    }
+
     // Admin functions
     function setPlatformFee(uint256 _feePercent) external onlyOwner {
         require(_feePercent <= 1000, "Fee cannot exceed 10%");
         platformFeePercent = _feePercent;
+    }
+
+    // Platform owner withdrawal
+    function withdrawPlatformEarnings(address payable to) external onlyOwner {
+        uint256 balance = totalPlatformEarnings;
+        require(balance > 0, "No platform earnings to withdraw");
+        
+        totalPlatformEarnings = 0;
+        to.transfer(balance);
     }
 
     function withdraw(address payable to) external onlyOwner {
@@ -216,4 +381,6 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
         (bool ok, ) = to.call{value: balance}("");
         require(ok, "Transfer failed");
     }
+
+     receive() external payable {}
 }

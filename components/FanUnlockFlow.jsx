@@ -6,10 +6,16 @@ const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
 
 const ABI = [
     'function pricePerContent(uint256) view returns (uint256)',
-    'function purchaseAccess(uint256) payable',
+    'function purchaseAccess(uint256) payable returns (uint256)',
+    'function buyAccess(uint256) payable returns (uint256)',
     'function checkAccess(address,uint256) view returns (bool)',
-    'function setPrice(uint256,uint256)',
-    'event AccessPurchased(address indexed buyer, uint256 indexed contentId, uint256 amount)'
+    'function updateContent(uint256,string,string,uint256,bool)',
+    'function withdrawEarnings()',
+    'function getCreatorEarnings(address) view returns (uint256)',
+    'function createContent(string,string,uint8,string,string,uint256,string) returns (uint256)',
+    'event AccessPurchased(address indexed buyer, uint256 indexed contentId, uint256 amount, uint256 tokenId)',
+    'event ContentCreated(uint256 indexed contentId, address indexed creator, uint8 contentType, string title)',
+    'event CreatorWithdrawal(address indexed creator, uint256 amount)'
 ];
 
 export default function FanUnlockFlow() {
