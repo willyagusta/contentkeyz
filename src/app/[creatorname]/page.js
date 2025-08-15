@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAccount, usePublicClient } from "wagmi";
 import { ethers } from "ethers";
+import { usePurchaseContent } from '@/hooks/usePurchasesContent';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "YOUR_CONTRACT_ADDRESS";
 
@@ -247,7 +248,7 @@ export default function CreatorProfile() {
 }
 
 function ContentCard({ content, hasAccess, userAddress, isConnected }) {
-  const [purchasing, setPurchasing] = useState(false);
+  const { purchaseContent, purchasing, isSuccess } = usePurchaseContent();
 
   const handlePurchase = async () => {
     if (!isConnected) {
@@ -255,14 +256,11 @@ function ContentCard({ content, hasAccess, userAddress, isConnected }) {
       return;
     }
 
-    setPurchasing(true);
     try {
-      console.log("Purchasing content:", content.id);
-      // Implementation depends on your wallet setup
+      await purchaseContent(content.id, formatEther(content.price));
     } catch (error) {
       console.error("Purchase failed:", error);
-    } finally {
-      setPurchasing(false);
+      alert("Purchase failed: " + error.message);
     }
   };
 
