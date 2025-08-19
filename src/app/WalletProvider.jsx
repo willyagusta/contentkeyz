@@ -9,23 +9,25 @@ import { WagmiProvider, createConfig, http } from 'wagmi';
 import {
   mainnet,
   polygon,
-  base
+  base,
+  baseSepolia
 } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { connectors } = getDefaultWallets({
     appName: 'ContentKeyz',
     projectId: 'placeholder for project id',
-    chains: [base, mainnet, polygon],
+    chains: [baseSepolia, base, mainnet, polygon],
 });
 
 const wagmiConfig = createConfig({
-    chains: [base, mainnet, polygon],
+    chains: [baseSepolia, base, mainnet, polygon],
     connectors,
     transports: {
         [mainnet.id]: http(),
         [polygon.id]: http(),
         [base.id]: http(),
+        [baseSepolia.id]: http(),
     },
 });
 

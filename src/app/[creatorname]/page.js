@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { useAccount, usePublicClient } from "wagmi";
 import { ethers } from "ethers";
 import { usePurchaseContent } from '@/hooks/usePurchasesContent';
+import { createPublicClient, http } from 'viem';
+import { mainnet } from 'viem/chains';
 
 const CONTRACT_ADDRESS = "0x20b7770c02C455b853bA0D1F98d2236b0fDa6539";
 
@@ -26,6 +28,11 @@ export default function CreatorProfile() {
   const [creatorContent, setCreatorContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const mainnetClient = createPublicClient({
+    chain: mainnet,
+    transport: http(),
+  });
 
   // Debug function to test ENS resolution
   const testENS = async () => {
@@ -58,8 +65,15 @@ export default function CreatorProfile() {
         // Try to resolve if it's an ENS name, otherwise treat as address
         let resolvedAddress;
         if (creatorName.endsWith('.eth')) {
-          // Resolve ENS name
-          resolvedAddress = await publicClient.getEnsAddress({ name: creatorName });
+          console.log("Attempting to resolve ENS:", creatorName);
+          try {
+            // Use dedicated mainnet client for ENS resolution
+            resolvedAddress = await mainnetClient.getEnsAddress({ name: creatorName });
+            console.log("ENS resolved to:", resolvedAddress);
+          } catch (ensError) {
+            console.error("ENS resolution failed:", ensError);
+            throw new Error(`Could not resolve ${creatorName}. ENS lookup failed.`);
+          }
         } else if (ethers.isAddress(creatorName)) {
           resolvedAddress = creatorName;
         } else {
@@ -157,7 +171,22 @@ export default function CreatorProfile() {
         setCreatorContent(contentDetails.filter(content => content.isActive));
         setLoading(false);
       } catch (err) {
-        setError("Failed to load creator data");
+        console.error("Contract call failed:", err);
+        console.error("Error details:", {
+          message: err.message,
+          creatorAddress,
+          contractAddress: CONTRACT_ADDRESS,
+          publicClient: !!publicClient
+        });
+        
+        // Show more specific error
+        if (err.message?.includes("CONTRACT_ADDRESS")) {
+          setError("Contract address not configured properly");
+        } else if (err.message?.includes("network")) {
+          setError("Network error - make sure you're on the right chain");
+        } else {
+          setError(`Contract error: ${err.message || "Failed to load creator data"}`);
+        }
         setLoading(false);
       }
     };
