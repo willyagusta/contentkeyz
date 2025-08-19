@@ -6,7 +6,7 @@ import { useAccount, usePublicClient } from "wagmi";
 import { ethers } from "ethers";
 import { usePurchaseContent } from '@/hooks/usePurchasesContent';
 
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "YOUR_CONTRACT_ADDRESS";
+const CONTRACT_ADDRESS = "0x20b7770c02C455b853bA0D1F98d2236b0fDa6539";
 
 const ABI = [
   'function getCreatorStats(address) view returns (tuple(uint256 totalEarnings, uint256 totalSales, uint256 activeContent, uint256 lifetimeEarnings))',
