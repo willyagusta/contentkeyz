@@ -27,6 +27,27 @@ export default function CreatorProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Debug function to test ENS resolution
+  const testENS = async () => {
+    try {
+      console.log("Testing ENS resolution...");
+      console.log("PublicClient:", publicClient);
+      
+      if (publicClient) {
+        const address = await publicClient.getEnsAddress({ name: "hopestream.eth" });
+        console.log("hopestream.eth resolves to:", address);
+      }
+    } catch (error) {
+      console.error("ENS resolution failed:", error);
+    }
+  };
+
+  // Call it when publicClient is ready
+  useEffect(() => {
+    if (publicClient) {
+      testENS();
+    }
+  }, [publicClient]);
 
   useEffect(() => {
     const resolveCreator = async () => {
@@ -48,7 +69,13 @@ export default function CreatorProfile() {
 
         setCreatorAddress(resolvedAddress);
       } catch (err) {
-        setError("Creator not found");
+        console.error("Creator resolution failed:", err);
+        console.error("Error details:", {
+          message: err.message,
+          creatorName: params.creatorname,
+          publicClient: !!publicClient
+        });
+        setError(err.message || "Creator not found");
         setLoading(false);
       }
     };
