@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { IPFSService } from '../../utils/ipfs';
+import { useCreateContent } from '../../hooks/useCreateContent';
 
 const CONTENT_TYPES = {
   PDF: 0,
@@ -26,6 +27,7 @@ export default function ContentUpload({ onContentCreated }) {
     embedUrl: ''
   });
   const fileInputRef = useRef();
+  const { createContent, creating, isSuccess } = useCreateContent();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -116,23 +118,18 @@ export default function ContentUpload({ onContentCreated }) {
       setUploadProgress(90);
 
       // Call smart contract to create content
-      const contentData = {
+      await createContent({
         title: formData.title,
         description: formData.description,
         contentType: detectedContentType,
         ipfsHash: ipfsHash,
         embedUrl: formData.embedUrl || '',
-        price: parseFloat(formData.price) || 0,
-        previewHash: previewHash,
-        metadataHash: metadataResult.hash
-      };
+        price: formData.price || '0',
+        previewHash: previewHash
+      });
 
       setUploadProgress(100);
       
-      if (onContentCreated) {
-        onContentCreated(contentData);
-      }
-
       // Reset form
       setFormData({
         title: '',
@@ -144,10 +141,23 @@ export default function ContentUpload({ onContentCreated }) {
         fileInputRef.current.value = '';
       }
 
-      alert('Content uploaded successfully!');
+      if (onContentCreated) {
+        onContentCreated({
+          title: formData.title,
+          description: formData.description,
+          contentType: detectedContentType,
+          ipfsHash: ipfsHash,
+          embedUrl: formData.embedUrl || '',
+          price: formData.price || '0',
+          previewHash: previewHash,
+          metadataHash: metadataResult.hash
+        });
+      }
+
+      alert('Content created successfully on blockchain!');
     } catch (error) {
       console.error('Upload failed:', error);
-      alert('Upload failed: ' + error.message);
+      alert('Upload failed: ' + (error.message || error.toString()));
     } finally {
       setIsUploading(false);
       setUploadProgress(0);
@@ -283,14 +293,14 @@ export default function ContentUpload({ onContentCreated }) {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={isUploading}
+          disabled={isUploading || creating}
           className={`w-full py-3 px-4 rounded-md font-medium ${
-            isUploading
+            isUploading || creating
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500'
           } text-white transition-colors`}
         >
-          {isUploading ? 'Uploading...' : 'Upload Content'}
+          {isUploading ? `Uploading... ${uploadProgress}%` : creating ? 'Creating on blockchain...' : 'Upload Content'}
         </button>
       </form>
     </div>
