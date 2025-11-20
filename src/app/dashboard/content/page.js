@@ -4,73 +4,55 @@ import { useState, useEffect } from 'react';
 import ContentUpload from '../../components/ContentUpload';
 import ContentGallery from '../../components/ContentGallery';
 import { useAccount } from 'wagmi';
+import { useFetchContent } from '../../../hooks/useFetchContent';
+import { usePurchaseContent } from '../../../hooks/usePurchasesContent';
 
 export default function ContentDashboard() {
   const { address } = useAccount();
-  const [contents, setContents] = useState([]);
-  const [userAccess, setUserAccess] = useState({});
   const [activeTab, setActiveTab] = useState('browse');
+  const { contents, userAccess, loading, refetch } = useFetchContent();
+  const { purchaseContent, purchasing, isSuccess: purchaseSuccess } = usePurchaseContent();
 
-  // Mock data for demonstration
+  // Refetch content when purchase succeeds
   useEffect(() => {
-    const mockContents = [
-      {
-        id: 1,
-        title: "Advanced DeFi Strategies PDF",
-        description: "Comprehensive guide to yield farming and liquidity provision",
-        contentType: 0, // PDF
-        ipfsHash: "QmExample1...",
-        embedUrl: "",
-        price: 0.05,
-        creator: "0x1234...5678",
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        previewHash: "QmPreview1..."
-      },
-      {
-        id: 2,
-        title: "Smart Contract Tutorial",
-        description: "Learn Solidity from scratch",
-        contentType: 5, // YouTube
-        ipfsHash: "",
-        embedUrl: "https://youtube.com/watch?v=example",
-        price: 0,
-        creator: "0x8765...4321",
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        previewHash: ""
-      },
-      {
-        id: 3,
-        title: "Web3 Development Course",
-        description: "Complete course materials and resources",
-        contentType: 2, // ZIP
-        ipfsHash: "QmExample3...",
-        embedUrl: "",
-        price: 0.1,
-        creator: "0x9999...1111",
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        previewHash: "QmPreview3..."
-      }
-    ];
-
-    setContents(mockContents);
-    
-    // Mock user access (user has access to content 2)
-    setUserAccess({ 2: true });
-  }, []);
+    if (purchaseSuccess) {
+      // Small delay to ensure blockchain state is updated
+      setTimeout(() => {
+        window.location.reload(); // Simple refresh for now
+      }, 2000);
+    }
+  }, [purchaseSuccess]);
 
   const handleContentCreated = (contentData) => {
     console.log('Content created:', contentData);
-    // This would call the smart contract and update the contents list
+    // Refresh content list after creation
+    // The component will automatically refetch on next render
+    setTimeout(() => {
+      window.location.reload();
+    }, 3000); // Wait for transaction confirmation
   };
 
   const handlePurchase = async (contentId, price) => {
-    console.log('Purchasing content:', contentId, price);
-    // Implementation, this would call the smart contract and update user access
-    setUserAccess(prev => ({ ...prev, [contentId]: true }));
+    try {
+      await purchaseContent(contentId, price.toString());
+      // Success is handled by useEffect above
+    } catch (error) {
+      console.error('Purchase failed:', error);
+      alert('Purchase failed: ' + (error.message || error.toString()));
+    }
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading content from blockchain...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -83,6 +65,11 @@ export default function ContentDashboard() {
           <p className="text-gray-600">
             Upload, manage, and access premium content with IPFS storage
           </p>
+          {contents.length === 0 && !loading && (
+            <p className="text-sm text-gray-500 mt-2">
+              No content available yet. Be the first to upload!
+            </p>
+          )}
         </div>
 
         {/* Tab Navigation */}
@@ -108,16 +95,18 @@ export default function ContentDashboard() {
             >
               Upload Content
             </button>
-            <button
-              onClick={() => setActiveTab('my-content')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'my-content'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              My Content
-            </button>
+            {address && (
+              <button
+                onClick={() => setActiveTab('my-content')}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'my-content'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                My Content
+              </button>
+            )}
           </nav>
         </div>
 
@@ -134,13 +123,21 @@ export default function ContentDashboard() {
           <ContentUpload onContentCreated={handleContentCreated} />
         )}
 
-        {activeTab === 'my-content' && (
+        {activeTab === 'my-content' && address && (
           <ContentGallery
-            contents={contents.filter(c => c.creator.toLowerCase() === address?.toLowerCase())}
+            contents={contents.filter(c => c.creator.toLowerCase() === address.toLowerCase())}
             userAccess={userAccess}
             onPurchase={handlePurchase}
             showFilter={false}
           />
+        )}
+
+        {/* Purchase Loading Indicator */}
+        {purchasing && (
+          <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+            <span>Processing purchase...</span>
+          </div>
         )}
       </div>
     </div>

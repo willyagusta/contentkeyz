@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { IPFSService } from '../../utils/ipfs';
 import { useCreateContent } from '../../hooks/useCreateContent';
 
@@ -20,6 +20,7 @@ export default function ContentUpload({ onContentCreated }) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [contentType, setContentType] = useState('file');
+  const [pendingContentData, setPendingContentData] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -27,7 +28,36 @@ export default function ContentUpload({ onContentCreated }) {
     embedUrl: ''
   });
   const fileInputRef = useRef();
-  const { createContent, creating, isSuccess } = useCreateContent();
+  const { createContent, creating, isSuccess, txHash } = useCreateContent();
+
+  // Watch for transaction success
+  useEffect(() => {
+    if (isSuccess && pendingContentData) {
+      setUploadProgress(100);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        description: '',
+        price: '',
+        embedUrl: ''
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      if (onContentCreated) {
+        onContentCreated(pendingContentData);
+      }
+
+      alert('Content created successfully on blockchain!');
+      
+      // Clean up
+      setPendingContentData(null);
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  }, [isSuccess, pendingContentData, onContentCreated]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -89,6 +119,8 @@ export default function ContentUpload({ onContentCreated }) {
         if (previewFile) {
           const previewResult = await IPFSService.uploadFile(previewFile);
           previewHash = previewResult.hash;
+          setUploadProgress(70);
+        } else {
           setUploadProgress(75);
         }
       } else {
@@ -101,6 +133,7 @@ export default function ContentUpload({ onContentCreated }) {
         } else if (url.includes('notion.')) {
           detectedContentType = CONTENT_TYPES.NOTION;
         }
+        setUploadProgress(50);
       }
 
       // Create metadata
@@ -115,9 +148,24 @@ export default function ContentUpload({ onContentCreated }) {
       };
 
       const metadataResult = await IPFSService.uploadJSON(metadata);
-      setUploadProgress(90);
+      setUploadProgress(85);
+
+      // Prepare content data for after transaction confirms
+      const contentDataToSave = {
+        title: formData.title,
+        description: formData.description,
+        contentType: detectedContentType,
+        ipfsHash: ipfsHash,
+        embedUrl: formData.embedUrl || '',
+        price: formData.price || '0',
+        previewHash: previewHash,
+        metadataHash: metadataResult.hash
+      };
+
+      setPendingContentData(contentDataToSave);
 
       // Call smart contract to create content
+      setUploadProgress(90);
       await createContent({
         title: formData.title,
         description: formData.description,
@@ -128,37 +176,13 @@ export default function ContentUpload({ onContentCreated }) {
         previewHash: previewHash
       });
 
-      setUploadProgress(100);
+      // Transaction submitted, waiting for confirmation (handled by useEffect)
+      setUploadProgress(95);
       
-      // Reset form
-      setFormData({
-        title: '',
-        description: '',
-        price: '',
-        embedUrl: ''
-      });
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
-      if (onContentCreated) {
-        onContentCreated({
-          title: formData.title,
-          description: formData.description,
-          contentType: detectedContentType,
-          ipfsHash: ipfsHash,
-          embedUrl: formData.embedUrl || '',
-          price: formData.price || '0',
-          previewHash: previewHash,
-          metadataHash: metadataResult.hash
-        });
-      }
-
-      alert('Content created successfully on blockchain!');
     } catch (error) {
       console.error('Upload failed:', error);
       alert('Upload failed: ' + (error.message || error.toString()));
-    } finally {
+      setPendingContentData(null);
       setIsUploading(false);
       setUploadProgress(0);
     }
@@ -276,7 +300,7 @@ export default function ContentUpload({ onContentCreated }) {
         </div>
 
         {/* Upload Progress */}
-        {isUploading && (
+        {(isUploading || creating) && (
           <div>
             <div className="bg-gray-200 rounded-full h-2">
               <div
@@ -285,8 +309,17 @@ export default function ContentUpload({ onContentCreated }) {
               ></div>
             </div>
             <p className="text-sm text-gray-600 mt-1">
-              Uploading... {uploadProgress}%
+              {isUploading && !creating 
+                ? `Uploading to IPFS... ${uploadProgress}%`
+                : creating 
+                ? `Waiting for blockchain confirmation... ${uploadProgress}%`
+                : `${uploadProgress}%`}
             </p>
+            {txHash && (
+              <p className="text-xs text-blue-600 mt-1">
+                Transaction: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+              </p>
+            )}
           </div>
         )}
 

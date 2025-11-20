@@ -12,14 +12,15 @@
     "@openzeppelin/contracts": "^5.4.0",
     "@rainbow-me/rainbowkit": "^2.2.8",
     "dotenv": "^17.2.1",
+    "electron": "^39.2.3",
     "ethers": "^6.15.0",
+    "ipfs-core": "^0.18.1",
+    "ipfs-http-client": "^60.0.1",
     "next": "15.4.5",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "viem": "^2.33.2",
-    "wagmi": "^2.16.1",
-    "ipfs-http-client": "^60.0.0",
-    "ipfs-core": "^0.18.1"
+    "wagmi": "^2.16.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
