@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { IPFSService } from '../../utils/ipfs';
 
 const ContentTypeIcons = {
@@ -17,6 +17,28 @@ const ContentTypeIcons = {
 
 export default function ContentViewer({ content, hasAccess, onPurchase }) {
   const [isLoading, setIsLoading] = useState(false);
+
+  // Load Twitter embed script when Twitter content is displayed
+  useEffect(() => {
+    if (content.contentType === 6 && hasAccess && typeof window !== 'undefined') {
+      // Check if script is already loaded
+      if (!window.twttr) {
+        const script = document.createElement('script');
+        script.src = 'https://platform.twitter.com/widgets.js';
+        script.charset = 'utf-8';
+        script.async = true;
+        document.body.appendChild(script);
+        
+        script.onload = () => {
+          if (window.twttr && window.twttr.widgets) {
+            window.twttr.widgets.load();
+          }
+        };
+      } else if (window.twttr && window.twttr.widgets) {
+        window.twttr.widgets.load();
+      }
+    }
+  }, [content.contentType, hasAccess]);
 
   const getEmbedComponent = (content) => {
     if (!hasAccess) return null;

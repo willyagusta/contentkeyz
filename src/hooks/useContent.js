@@ -68,12 +68,9 @@ export function useContent() {
           }
         }
 
-        // For now, we'll fetch sequentially to avoid rate limits
-        // You could optimize this with multicall if available
+
         const contentPromises = contracts.map(async (contract) => {
           try {
-            // We'll need to use a different approach since useReadContracts 
-            // doesn't work well dynamically. Let's fetch sequentially.
             return null; // Placeholder
           } catch (error) {
             console.error('Error fetching content:', error);
@@ -81,15 +78,12 @@ export function useContent() {
           }
         });
 
-        // For now, let's use a simpler sequential approach
         const fetchedContents = [];
         const accessMap = {};
 
         // Fetch each content item
         for (let i = 1; i <= Number(totalContent); i++) {
           try {
-            // This would need to be done with actual contract calls
-            // We'll create a helper function or use wagmi's useReadContract in a different way
             fetchedContents.push(null);
           } catch (error) {
             console.error(`Error fetching content ${i}:`, error);
