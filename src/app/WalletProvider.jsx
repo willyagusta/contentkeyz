@@ -20,14 +20,38 @@ const { connectors } = getDefaultWallets({
     chains: [baseSepolia, base, mainnet, polygon],
 });
 
+// Alchemy RPC URLs - use environment variables
+const getAlchemyUrl = (chainName) => {
+  const apiKey = process.env.NEXT_PUBLIC_ALCHEMY_API_KEY;
+  if (!apiKey) {
+    console.warn(`Alchemy API key not found for ${chainName}, using public RPC`);
+    return undefined; // Will fall back to default public RPC
+  }
+
+  const urls = {
+    mainnet: `https://eth-mainnet.g.alchemy.com/v2/${apiKey}`,
+    polygon: `https://polygon-mainnet.g.alchemy.com/v2/${apiKey}`,
+    base: `https://base-mainnet.g.alchemy.com/v2/${apiKey}`,
+    baseSepolia: `https://base-sepolia.g.alchemy.com/v2/${apiKey}`,
+  };
+
+  return urls[chainName];
+};
+
+// Create transport for each chain, using Alchemy if available, otherwise public RPC
+const createTransport = (chainId, chainName) => {
+  const alchemyUrl = getAlchemyUrl(chainName);
+  return alchemyUrl ? http(alchemyUrl) : http();
+};
+
 const wagmiConfig = createConfig({
     chains: [baseSepolia, base, mainnet, polygon],
     connectors,
     transports: {
-        [mainnet.id]: http(),
-        [polygon.id]: http(),
-        [base.id]: http(),
-        [baseSepolia.id]: http(),
+        [mainnet.id]: createTransport(mainnet.id, 'mainnet'),
+        [polygon.id]: createTransport(polygon.id, 'polygon'),
+        [base.id]: createTransport(base.id, 'base'),
+        [baseSepolia.id]: createTransport(baseSepolia.id, 'baseSepolia'),
     },
 });
 

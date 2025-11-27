@@ -1,21 +1,33 @@
 import { create } from 'ipfs-http-client';
 
 // IPFS Configuration
+// Note: Alchemy doesn't provide IPFS services, so we use public gateway or custom IPFS node
 const IPFS_GATEWAY = process.env.NEXT_PUBLIC_IPFS_GATEWAY || 'https://ipfs.io/ipfs/';
 const PINATA_API_KEY = process.env.NEXT_PUBLIC_PINATA_API_KEY;
 const PINATA_SECRET_KEY = process.env.PINATA_SECRET_KEY;
 
 // Initialize IPFS client
-const ipfs = create({
-  host: 'ipfs.infura.io',
-  port: 5001,
-  protocol: 'https',
-  headers: {
-    authorization: `Basic ${Buffer.from(
-      `${process.env.NEXT_PUBLIC_INFURA_PROJECT_ID}:${process.env.INFURA_PROJECT_SECRET}`
-    ).toString('base64')}`
-  }
-});
+// Using public IPFS gateway or custom node if provided
+const ipfsNodeUrl = process.env.NEXT_PUBLIC_IPFS_NODE_URL;
+let ipfs;
+
+if (ipfsNodeUrl) {
+  // Use custom IPFS node if provided
+  const url = new URL(ipfsNodeUrl);
+  ipfs = create({
+    host: url.hostname,
+    port: url.port || (url.protocol === 'https:' ? 443 : 80),
+    protocol: url.protocol.replace(':', ''),
+    path: url.pathname || '/api/v0',
+  });
+} else {
+  // Use public IPFS gateway (no auth required)
+  ipfs = create({
+    host: 'ipfs.io',
+    port: 443,
+    protocol: 'https',
+  });
+}
 
 export class IPFSService {
   static async uploadFile(file, options = {}) {

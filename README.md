@@ -2,6 +2,37 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Environment Variables
+
+Create a `.env.local` file in the root directory with the following variables:
+
+```env
+# Alchemy API Key (required for blockchain RPC)
+NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_api_key_here
+
+# Contract Address
+NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address_here
+
+# IPFS Configuration (optional - uses public gateway by default)
+NEXT_PUBLIC_IPFS_GATEWAY=https://ipfs.io/ipfs/
+NEXT_PUBLIC_IPFS_NODE_URL=your_custom_ipfs_node_url_here
+
+# Pinata (optional - for IPFS pinning)
+NEXT_PUBLIC_PINATA_API_KEY=your_pinata_api_key
+PINATA_SECRET_KEY=your_pinata_secret_key
+
+# Hardhat/Deployment (for local development)
+PRIVATE_KEY=your_private_key_here
+ALCHEMY_API_KEY=your_alchemy_api_key_here
+```
+
+### Get Your Alchemy API Key
+
+1. Sign up at [Alchemy](https://www.alchemy.com/)
+2. Create a new app for your desired network (Base, Ethereum, Polygon, etc.)
+3. Copy your API key from the dashboard
+4. Add it to your `.env.local` file as `NEXT_PUBLIC_ALCHEMY_API_KEY`
+
 First, run the development server:
 
 ```bash
