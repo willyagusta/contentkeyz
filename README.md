@@ -7,31 +7,78 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 Create a `.env.local` file in the root directory with the following variables:
 
 ```env
+# WalletConnect/Reown Project ID (required for wallet connections)
+# Get it from https://cloud.reown.com/
+NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID=your_wallet_connect_project_id_here
+
 # Alchemy API Key (required for blockchain RPC)
 NEXT_PUBLIC_ALCHEMY_API_KEY=your_alchemy_api_key_here
 
 # Contract Address
 NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address_here
 
-# IPFS Configuration (optional - uses public gateway by default)
-NEXT_PUBLIC_IPFS_GATEWAY=https://ipfs.io/ipfs/
-NEXT_PUBLIC_IPFS_NODE_URL=your_custom_ipfs_node_url_here
+# IPFS Configuration
+# Option 1: Pinata JWT Token (Recommended - Most Secure)
+# Get from: https://app.pinata.cloud/developers/api-keys
+NEXT_PUBLIC_PINATA_JWT=your_pinata_jwt_token_here
 
-# Pinata (optional - for IPFS pinning)
-NEXT_PUBLIC_PINATA_API_KEY=your_pinata_api_key
-PINATA_SECRET_KEY=your_pinata_secret_key
+# Option 2: Pinata API Key + Secret (Alternative)
+# Get from: https://app.pinata.cloud/developers/api-keys
+# NEXT_PUBLIC_PINATA_API_KEY=your_pinata_api_key
+# NEXT_PUBLIC_PINATA_SECRET_KEY=your_pinata_secret_key
+
+# Option 3: Custom IPFS Node (Alternative)
+# NEXT_PUBLIC_IPFS_NODE_URL=https://your-ipfs-node.com:5001
+
+# IPFS Gateway (optional - defaults to public gateway)
+NEXT_PUBLIC_IPFS_GATEWAY=https://ipfs.io/ipfs/
+
+**Important:** You MUST configure at least one IPFS upload method (Pinata JWT, Pinata API keys, or custom IPFS node) for file uploads to work. Without it, you'll see "No IPFS upload method configured" errors.
 
 # Hardhat/Deployment (for local development)
 PRIVATE_KEY=your_private_key_here
 ALCHEMY_API_KEY=your_alchemy_api_key_here
 ```
 
+### Get Your WalletConnect/Reown Project ID
+
+1. Sign up at [Reown Cloud](https://cloud.reown.com/) (formerly WalletConnect Cloud)
+2. Create a new project
+3. Copy your Project ID from the dashboard
+4. Add it to your `.env.local` file as `NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID`
+
+**Note:** This is required for wallet connections to work properly. Without it, you'll see 403 errors in the console.
+
 ### Get Your Alchemy API Key
 
 1. Sign up at [Alchemy](https://www.alchemy.com/)
-2. Create a new app for your desired network (Base, Ethereum, Polygon, etc.)
+2. Create a new app for your desired network:
+   - **Base Sepolia** (recommended for testing) - `base-sepolia`
+   - **Base Mainnet** - `base-mainnet`
+   - **Ethereum Mainnet** - `eth-mainnet`
+   - **Polygon** - `polygon-mainnet`
 3. Copy your API key from the dashboard
 4. Add it to your `.env.local` file as `NEXT_PUBLIC_ALCHEMY_API_KEY`
+
+**Note:** Base Sepolia is configured as the default test network. Make sure to create an Alchemy app for Base Sepolia if you're testing.
+
+### Get Your Pinata IPFS Credentials
+
+For file uploads to work, you need to configure Pinata (or another IPFS service):
+
+1. Sign up at [Pinata](https://app.pinata.cloud/)
+2. Go to [API Keys](https://app.pinata.cloud/developers/api-keys)
+3. **Recommended:** Create a JWT token:
+   - Click "New Key"
+   - Select "Admin" permissions
+   - Copy the JWT token
+   - Add to `.env.local` as `NEXT_PUBLIC_PINATA_JWT`
+4. **Alternative:** Use API Key + Secret:
+   - Create a new API key
+   - Copy both the API Key and Secret Key
+   - Add to `.env.local` as `NEXT_PUBLIC_PINATA_API_KEY` and `NEXT_PUBLIC_PINATA_SECRET_KEY`
+
+**Note:** All client-side environment variables MUST be prefixed with `NEXT_PUBLIC_` for Next.js to expose them to the browser.
 
 First, run the development server:
 

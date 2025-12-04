@@ -14,9 +14,15 @@ import {
 } from 'wagmi/chains';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+const PROJECT_ID = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID || '';
+
+if (!PROJECT_ID) {
+  console.warn('NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID not set. Wallet connection may not work properly.');
+}
+
 const { connectors } = getDefaultWallets({
     appName: 'ContentKeyz',
-    projectId: 'placeholder for project id',
+    projectId: PROJECT_ID,
     chains: [baseSepolia, base, mainnet, polygon],
 });
 

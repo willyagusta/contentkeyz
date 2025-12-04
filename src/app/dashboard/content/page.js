@@ -8,6 +8,7 @@ import { useAccount } from 'wagmi';
 import { useFetchContent } from '../../../hooks/useFetchContent';
 import { useFetchCreators } from '../../../hooks/useFetchCreators';
 import { usePurchaseContent } from '../../../hooks/usePurchasesContent';
+import { useCreateContent } from '../../../hooks/useCreateContent';
 
 export default function ContentDashboard() {
   const { address } = useAccount();
@@ -21,18 +22,22 @@ export default function ContentDashboard() {
     if (purchaseSuccess) {
       // Small delay to ensure blockchain state is updated
       setTimeout(() => {
-        window.location.reload(); // Simple refresh for now
+        refetch(); // Use refetch instead of reload
       }, 2000);
     }
-  }, [purchaseSuccess]);
+  }, [purchaseSuccess, refetch]);
 
   const handleContentCreated = (contentData) => {
     console.log('Content created:', contentData);
-    // Refresh content list after creation
-    // The component will automatically refetch on next render
+    // Wait for transaction to be confirmed and RPC to index
+    // isSuccess already means transaction is confirmed, but RPC might need a moment
     setTimeout(() => {
-      window.location.reload();
-    }, 3000); // Wait for transaction confirmation
+      refetch(); // Use refetch instead of reload
+      // Optionally switch to "My Content" tab to see the new content
+      if (address) {
+        setActiveTab('my-content');
+      }
+    }, 3000); // Wait 3 seconds for RPC indexing
   };
 
   const handlePurchase = async (contentId, price) => {

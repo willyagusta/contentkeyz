@@ -83,12 +83,21 @@ export default function ContentUpload({ onContentCreated }) {
   const handleFileUpload = async (e) => {
     e.preventDefault();
     
+    console.log('[ContentUpload] Starting upload process', {
+      contentType,
+      hasFile: !!fileInputRef.current?.files[0],
+      embedUrl: formData.embedUrl,
+      title: formData.title
+    });
+    
     if (contentType === 'file' && !fileInputRef.current?.files[0]) {
+      console.warn('[ContentUpload] No file selected');
       alert('Please select a file');
       return;
     }
 
     if (contentType === 'embed' && !formData.embedUrl) {
+      console.warn('[ContentUpload] No embed URL provided');
       alert('Please enter an embed URL');
       return;
     }
@@ -103,28 +112,49 @@ export default function ContentUpload({ onContentCreated }) {
 
       if (contentType === 'file') {
         const file = fileInputRef.current.files[0];
+        console.log('[ContentUpload] Processing file upload', {
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type
+        });
+        
         detectedContentType = detectContentType(file);
+        console.log('[ContentUpload] Detected content type:', detectedContentType);
 
         // Upload main file
+        console.log('[ContentUpload] Uploading main file to IPFS...');
+        setUploadProgress(10);
         const uploadResult = await IPFSService.uploadFile(file, {
           onProgress: (progress) => {
-            setUploadProgress(Math.round((progress.loaded / progress.total) * 50));
+            const progressPercent = Math.round((progress.loaded / progress.total) * 40) + 10;
+            setUploadProgress(progressPercent);
+            console.log('[ContentUpload] File upload progress:', progressPercent + '%');
           }
         });
         
         ipfsHash = uploadResult.hash;
+        console.log('[ContentUpload] Main file uploaded successfully:', {
+          hash: ipfsHash,
+          url: uploadResult.url
+        });
+        setUploadProgress(50);
 
         // Create and upload preview
+        console.log('[ContentUpload] Creating preview...');
         const previewFile = await IPFSService.createPreview(file);
         if (previewFile) {
+          console.log('[ContentUpload] Preview created, uploading to IPFS...');
           const previewResult = await IPFSService.uploadFile(previewFile);
           previewHash = previewResult.hash;
+          console.log('[ContentUpload] Preview uploaded successfully:', previewHash);
           setUploadProgress(70);
         } else {
+          console.log('[ContentUpload] No preview generated for this file type');
           setUploadProgress(75);
         }
       } else {
         // Handle embed content
+        console.log('[ContentUpload] Processing embed content');
         const url = formData.embedUrl;
         if (url.includes('youtube.com') || url.includes('youtu.be')) {
           detectedContentType = CONTENT_TYPES.YOUTUBE;
@@ -133,10 +163,12 @@ export default function ContentUpload({ onContentCreated }) {
         } else if (url.includes('notion.')) {
           detectedContentType = CONTENT_TYPES.NOTION;
         }
+        console.log('[ContentUpload] Embed content type detected:', detectedContentType);
         setUploadProgress(50);
       }
 
       // Create metadata
+      console.log('[ContentUpload] Creating metadata...');
       const metadata = {
         title: formData.title,
         description: formData.description,
@@ -147,7 +179,12 @@ export default function ContentUpload({ onContentCreated }) {
         version: '1.0'
       };
 
+      console.log('[ContentUpload] Uploading metadata to IPFS...');
       const metadataResult = await IPFSService.uploadJSON(metadata);
+      console.log('[ContentUpload] Metadata uploaded successfully:', {
+        hash: metadataResult.hash,
+        url: metadataResult.url
+      });
       setUploadProgress(85);
 
       // Prepare content data for after transaction confirms
@@ -162,9 +199,11 @@ export default function ContentUpload({ onContentCreated }) {
         metadataHash: metadataResult.hash
       };
 
+      console.log('[ContentUpload] Content data prepared:', contentDataToSave);
       setPendingContentData(contentDataToSave);
 
       // Call smart contract to create content
+      console.log('[ContentUpload] Creating content on blockchain...');
       setUploadProgress(90);
       await createContent({
         title: formData.title,
@@ -176,11 +215,16 @@ export default function ContentUpload({ onContentCreated }) {
         previewHash: previewHash
       });
 
+      console.log('[ContentUpload] Transaction submitted, waiting for confirmation...');
       // Transaction submitted, waiting for confirmation (handled by useEffect)
       setUploadProgress(95);
       
     } catch (error) {
-      console.error('Upload failed:', error);
+      console.error('[ContentUpload] Upload failed:', {
+        error: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       alert('Upload failed: ' + (error.message || error.toString()));
       setPendingContentData(null);
       setIsUploading(false);
