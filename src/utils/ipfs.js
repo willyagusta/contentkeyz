@@ -22,8 +22,6 @@ if (ipfsNodeUrl) {
     path: url.pathname || '/api/v0',
   });
 } else {
-  // Don't initialize IPFS client for read-only gateway
-  // ipfs.io is a read-only gateway and cannot handle uploads
   console.warn('[IPFS] No writable IPFS node configured. Uploads will require Pinata API keys.');
   ipfs = null;
 }
@@ -184,7 +182,6 @@ export class IPFSService {
       dataSize: JSON.stringify(jsonData).length
     });
 
-    // Try Pinata API first if credentials are available (JWT preferred, then API keys)
     if (PINATA_JWT || (PINATA_API_KEY && PINATA_SECRET_KEY)) {
       console.log('[IPFS] Using Pinata API for JSON upload');
       try {
