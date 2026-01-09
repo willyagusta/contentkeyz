@@ -1,10 +1,14 @@
 const hre = require("hardhat");
 
-async function deploy() {
+async function main() {
   console.log("Deploying AccessUnlock contract...");
 
   const [deployer] = await hre.ethers.getSigners();
   console.log("Deploying with account:", deployer.address);
+  console.log(
+    "Deployer balance:",
+    (await deployer.provider.getBalance(deployer.address)).toString()
+  );
 
   const AccessUnlock = await hre.ethers.getContractFactory("AccessUnlock");
   const accessUnlock = await AccessUnlock.deploy();
@@ -13,8 +17,6 @@ async function deploy() {
   const address = await accessUnlock.getAddress();
 
   console.log("AccessUnlock deployed to:", address);
-  
-  // Save deployment info
   console.log("Contract name: AccessUnlock");
   console.log("Network:", hre.network.name);
   console.log("Deployer:", deployer.address);

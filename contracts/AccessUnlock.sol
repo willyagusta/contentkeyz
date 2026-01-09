@@ -152,7 +152,9 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
         
         creatorEarnings[msg.sender] = 0;
         
-        payable(msg.sender).transfer(amount);
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Transfer failed");
+        
         emit CreatorWithdrawal(msg.sender, amount);
     }
 
@@ -372,14 +374,16 @@ contract AccessUnlock is ERC721URIStorage, Ownable, ReentrancyGuard {
         require(balance > 0, "No platform earnings to withdraw");
         
         totalPlatformEarnings = 0;
-        to.transfer(balance);
+        
+        (bool success, ) = to.call{value: balance}("");
+        require(success, "Transfer failed");
     }
 
     function withdraw(address payable to) external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance to withdraw");
-        (bool ok, ) = to.call{value: balance}("");
-        require(ok, "Transfer failed");
+        (bool success, ) = to.call{value: balance}("");
+        require(success, "Transfer failed");
     }
 
      receive() external payable {}
