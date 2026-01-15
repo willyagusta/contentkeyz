@@ -5,7 +5,15 @@ import { parseEther } from 'ethers';
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 
 const ABI = [
-  'function purchaseAccess(uint256) payable returns (uint256)',
+  {
+    inputs: [
+      { internalType: 'uint256', name: '_contentId', type: 'uint256' },
+    ],
+    name: 'purchaseAccess',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
+    stateMutability: 'payable',
+    type: 'function',
+  },
 ];
 
 export function usePurchaseContent() {

@@ -28,11 +28,20 @@ export default function ContentUpload({ onContentCreated }) {
     embedUrl: ''
   });
   const fileInputRef = useRef();
-  const { createContent, creating, isSuccess, txHash } = useCreateContent();
+  const { createContent, creating, isSuccess, txHash, error } = useCreateContent();
+
+  // Watch for transaction hash to appear and update progress
+  useEffect(() => {
+    if (txHash && uploadProgress < 95 && creating) {
+      console.log('[ContentUpload] Transaction hash received:', txHash);
+      setUploadProgress(95);
+    }
+  }, [txHash, uploadProgress, creating]);
 
   // Watch for transaction success
   useEffect(() => {
     if (isSuccess && pendingContentData) {
+      console.log('[ContentUpload] Transaction confirmed, completing upload');
       setUploadProgress(100);
       
       // Reset form
@@ -58,6 +67,33 @@ export default function ContentUpload({ onContentCreated }) {
       setUploadProgress(0);
     }
   }, [isSuccess, pendingContentData, onContentCreated]);
+
+  // Watch for transaction errors
+  useEffect(() => {
+    if (error && (creating || uploadProgress >= 90)) {
+      console.error('[ContentUpload] Transaction error detected:', error);
+      alert('Transaction failed: ' + error);
+      setPendingContentData(null);
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  }, [error, creating, uploadProgress]);
+
+  // Timeout protection - if stuck at 95% for more than 5 minutes, show error
+  useEffect(() => {
+    if (uploadProgress >= 95 && creating && !isSuccess && !error) {
+      const timeout = setTimeout(() => {
+        console.warn('[ContentUpload] Upload timeout - transaction may be stuck');
+        alert('Transaction is taking longer than expected. Please check your wallet or try again. If the transaction was submitted, you can check its status in your wallet.');
+        // Don't reset everything - let user check their wallet
+        // setPendingContentData(null);
+        // setIsUploading(false);
+        // setUploadProgress(0);
+      }, 5 * 60 * 1000); // 5 minutes timeout
+
+      return () => clearTimeout(timeout);
+    }
+  }, [uploadProgress, creating, isSuccess, error]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -205,6 +241,7 @@ export default function ContentUpload({ onContentCreated }) {
       // Call smart contract to create content
       console.log('[ContentUpload] Creating content on blockchain...');
       setUploadProgress(90);
+      
       await createContent({
         title: formData.title,
         description: formData.description,
@@ -215,9 +252,21 @@ export default function ContentUpload({ onContentCreated }) {
         previewHash: previewHash
       });
 
-      console.log('[ContentUpload] Transaction submitted, waiting for confirmation...');
-      // Transaction submitted, waiting for confirmation (handled by useEffect)
-      setUploadProgress(95);
+      console.log('[ContentUpload] Transaction submitted, waiting for confirmation...', {
+        txHash: txHash,
+        creating: creating,
+        isSuccess: isSuccess
+      });
+      
+      // Transaction submitted - progress will be updated to 95% when hash is available (via useEffect)
+      // If hash is already available, set progress now
+      if (txHash) {
+        setUploadProgress(95);
+        console.log('[ContentUpload] Transaction hash available:', txHash);
+      } else {
+        setUploadProgress(93);
+        console.log('[ContentUpload] Waiting for transaction hash (user may need to approve in wallet)...');
+      }
       
     } catch (error) {
       console.error('[ContentUpload] Upload failed:', {
