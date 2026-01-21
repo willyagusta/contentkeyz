@@ -16,19 +16,26 @@ const CONTRACT_ABI = [
     inputs: [{ internalType: 'uint256', name: '_contentId', type: 'uint256' }],
     name: 'getContent',
     outputs: [
-      { internalType: 'uint256', name: 'id', type: 'uint256' },
-      { internalType: 'string', name: 'title', type: 'string' },
-      { internalType: 'string', name: 'description', type: 'string' },
-      { internalType: 'uint8', name: 'contentType', type: 'uint8' },
-      { internalType: 'string', name: 'ipfsHash', type: 'string' },
-      { internalType: 'string', name: 'embedUrl', type: 'string' },
-      { internalType: 'uint256', name: 'price', type: 'uint256' },
-      { internalType: 'address', name: 'creator', type: 'address' },
-      { internalType: 'bool', name: 'isActive', type: 'bool' },
-      { internalType: 'uint256', name: 'createdAt', type: 'uint256' },
-      { internalType: 'string', name: 'previewHash', type: 'string' },
-      { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
-      { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
+      {
+        components: [
+          { internalType: 'uint256', name: 'id', type: 'uint256' },
+          { internalType: 'string', name: 'title', type: 'string' },
+          { internalType: 'string', name: 'description', type: 'string' },
+          { internalType: 'uint8', name: 'contentType', type: 'uint8' },
+          { internalType: 'string', name: 'ipfsHash', type: 'string' },
+          { internalType: 'string', name: 'embedUrl', type: 'string' },
+          { internalType: 'uint256', name: 'price', type: 'uint256' },
+          { internalType: 'address', name: 'creator', type: 'address' },
+          { internalType: 'bool', name: 'isActive', type: 'bool' },
+          { internalType: 'uint256', name: 'createdAt', type: 'uint256' },
+          { internalType: 'string', name: 'previewHash', type: 'string' },
+          { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
+          { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
+        ],
+        internalType: 'struct AccessUnlock.ContentItem',
+        name: '',
+        type: 'tuple',
+      },
     ],
     stateMutability: 'view',
     type: 'function',
@@ -82,12 +89,13 @@ export function useFetchContent() {
       const contentPromises = [];
       for (let i = 1; i <= Number(totalContent); i++) {
         contentPromises.push(
-          publicClient.readContract({
-            address: CONTRACT_ADDRESS,
-            abi: CONTRACT_ABI,
-            functionName: 'getContent',
-            args: [BigInt(i)],
-          })
+          publicClient
+            .readContract({
+              address: CONTRACT_ADDRESS,
+              abi: CONTRACT_ABI,
+              functionName: 'getContent',
+              args: [BigInt(i)],
+            })
             .then((result) => ({ id: i, data: result, error: null }))
             .catch((error) => {
               console.warn(`Failed to fetch content ID ${i}:`, error);
@@ -97,7 +105,6 @@ export function useFetchContent() {
       }
 
       const contentResults = await Promise.all(contentPromises);
-      
       console.log(`Fetched ${contentResults.length} content items`);
       
       // Format content items
@@ -109,9 +116,11 @@ export function useFetchContent() {
             }
             return null;
           }
-          
-          const [
-            contentId,
+
+          const item = data;
+
+          const {
+            id: contentId,
             title,
             description,
             contentType,
@@ -124,7 +133,7 @@ export function useFetchContent() {
             previewHash,
             totalEarnings,
             totalSales,
-          ] = data;
+          } = item;
 
           console.log(`Content ID ${id}: title="${title}", isActive=${isActive}, creator=${creator}`);
 
@@ -153,6 +162,7 @@ export function useFetchContent() {
         .filter(Boolean);
 
       console.log(`Formatted ${formattedContents.length} active content items`);
+
       setContents(formattedContents);
 
       // Check user access for all content
@@ -181,6 +191,7 @@ export function useFetchContent() {
       }
     } catch (error) {
       console.error('Error fetching content:', error);
+
       setContents([]);
       setUserAccess({});
     } finally {
