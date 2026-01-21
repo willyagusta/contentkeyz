@@ -16,19 +16,26 @@ const CONTRACT_ABI = [
     inputs: [{ internalType: 'uint256', name: '_contentId', type: 'uint256' }],
     name: 'getContent',
     outputs: [
-      { internalType: 'uint256', name: 'id', type: 'uint256' },
-      { internalType: 'string', name: 'title', type: 'string' },
-      { internalType: 'string', name: 'description', type: 'string' },
-      { internalType: 'uint8', name: 'contentType', type: 'uint8' },
-      { internalType: 'string', name: 'ipfsHash', type: 'string' },
-      { internalType: 'string', name: 'embedUrl', type: 'string' },
-      { internalType: 'uint256', name: 'price', type: 'uint256' },
-      { internalType: 'address', name: 'creator', type: 'address' },
-      { internalType: 'bool', name: 'isActive', type: 'bool' },
-      { internalType: 'uint256', name: 'createdAt', type: 'uint256' },
-      { internalType: 'string', name: 'previewHash', type: 'string' },
-      { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
-      { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
+      {
+        components: [
+          { internalType: 'uint256', name: 'id', type: 'uint256' },
+          { internalType: 'string', name: 'title', type: 'string' },
+          { internalType: 'string', name: 'description', type: 'string' },
+          { internalType: 'uint8', name: 'contentType', type: 'uint8' },
+          { internalType: 'string', name: 'ipfsHash', type: 'string' },
+          { internalType: 'string', name: 'embedUrl', type: 'string' },
+          { internalType: 'uint256', name: 'price', type: 'uint256' },
+          { internalType: 'address', name: 'creator', type: 'address' },
+          { internalType: 'bool', name: 'isActive', type: 'bool' },
+          { internalType: 'uint256', name: 'createdAt', type: 'uint256' },
+          { internalType: 'string', name: 'previewHash', type: 'string' },
+          { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
+          { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
+        ],
+        internalType: 'struct AccessUnlock.ContentItem',
+        name: '',
+        type: 'tuple',
+      },
     ],
     stateMutability: 'view',
     type: 'function',
@@ -37,10 +44,17 @@ const CONTRACT_ABI = [
     inputs: [{ internalType: 'address', name: '_creator', type: 'address' }],
     name: 'getCreatorStats',
     outputs: [
-      { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
-      { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
-      { internalType: 'uint256', name: 'activeContent', type: 'uint256' },
-      { internalType: 'uint256', name: 'lifetimeEarnings', type: 'uint256' },
+      {
+        components: [
+          { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
+          { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
+          { internalType: 'uint256', name: 'activeContent', type: 'uint256' },
+          { internalType: 'uint256', name: 'lifetimeEarnings', type: 'uint256' },
+        ],
+        internalType: 'struct AccessUnlock.CreatorStats',
+        name: '',
+        type: 'tuple',
+      },
     ],
     stateMutability: 'view',
     type: 'function',
@@ -96,7 +110,9 @@ export function useFetchCreators() {
         contentResults.forEach((result) => {
           if (!result) return;
           
-          const [
+          // Handle struct object (not array)
+          const item = result;
+          const {
             id,
             title,
             description,
@@ -110,7 +126,7 @@ export function useFetchCreators() {
             previewHash,
             totalEarnings,
             totalSales,
-          ] = result;
+          } = item;
 
           // Only count active content
           if (!isActive) return;
@@ -148,11 +164,20 @@ export function useFetchCreators() {
               args: [creatorMap[address].address],
             });
 
+            // Handle struct object (not array)
+            const statsObj = stats;
+            const {
+              totalEarnings: statsTotalEarnings,
+              totalSales: statsTotalSales,
+              activeContent: statsActiveContent,
+              lifetimeEarnings: statsLifetimeEarnings,
+            } = statsObj;
+
             return {
               ...creatorMap[address],
-              lifetimeEarnings: parseFloat(formatEther(stats[3] || 0)),
-              totalSales: Number(stats[1] || 0),
-              activeContent: Number(stats[2] || 0),
+              lifetimeEarnings: parseFloat(formatEther(statsLifetimeEarnings || 0)),
+              totalSales: Number(statsTotalSales || 0),
+              activeContent: Number(statsActiveContent || 0),
             };
           } catch (error) {
             // If stats don't exist, use aggregated data
