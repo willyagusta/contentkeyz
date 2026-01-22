@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 import { usePurchaseContent } from '@/hooks/usePurchasesContent';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
-import { IPFSService } from '../../utils/ipfs';
+import ContentModal from '../components/ContentModal';
 
 const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 
@@ -662,10 +662,13 @@ function ContentCard({ content, hasAccess, userAddress, isConnected }) {
         </div>
 
         {hasAccess ? (
-          <button className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200">
+          <button 
+            onClick={() => setShowModal(true)}
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+          >
             <span className="flex items-center justify-center space-x-2">
-              <span>✓</span>
-              <span>Access Granted</span>
+              <span>👁️</span>
+              <span>View Content</span>
             </span>
           </button>
         ) : (
@@ -688,6 +691,14 @@ function ContentCard({ content, hasAccess, userAddress, isConnected }) {
           </button>
         )}
       </div>
+
+      {/* Content View Modal */}
+      {showModal && hasAccess && (
+        <ContentModal 
+          content={content} 
+          onClose={() => setShowModal(false)} 
+        />
+      )}
     </div>
   );
 }
