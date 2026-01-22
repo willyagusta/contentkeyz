@@ -2,64 +2,79 @@
 
 import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import { useAccount, usePublicClient } from "wagmi";
+import { useAccount, usePublicClient, useEnsName, useEnsAddress } from "wagmi";
 import { ethers } from "ethers";
 import { usePurchaseContent } from '@/hooks/usePurchasesContent';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
+import { IPFSService } from '../../utils/ipfs';
 
-const CONTRACT_ADDRESS = "0x20b7770c02C455b853bA0D1F98d2236b0fDa6539";
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 
 const ABI = [
   {
-    name: 'getCreatorStats',
-    type: 'function',
+    inputs: [],
+    name: 'getTotalContent',
+    outputs: [{ internalType: 'uint256', name: '', type: 'uint256' }],
     stateMutability: 'view',
-    inputs: [{ name: '_creator', type: 'address' }],
-    outputs: [
-      { name: 'totalEarnings', type: 'uint256' },
-      { name: 'totalSales', type: 'uint256' },
-      { name: 'activeContent', type: 'uint256' },
-      { name: 'lifetimeEarnings', type: 'uint256' }
-    ]
+    type: 'function',
   },
   {
-    name: 'getUserContent',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: '_user', type: 'address' }],
-    outputs: [{ name: '', type: 'uint256[]' }]
-  },
-  {
+    inputs: [{ internalType: 'uint256', name: '_contentId', type: 'uint256' }],
     name: 'getContent',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [{ name: '_contentId', type: 'uint256' }],
     outputs: [
-      { name: 'id', type: 'uint256' },
-      { name: 'title', type: 'string' },
-      { name: 'description', type: 'string' },
-      { name: 'contentType', type: 'uint8' },
-      { name: 'ipfsHash', type: 'string' },
-      { name: 'embedUrl', type: 'string' },
-      { name: 'price', type: 'uint256' },
-      { name: 'creator', type: 'address' },
-      { name: 'isActive', type: 'bool' },
-      { name: 'createdAt', type: 'uint256' },
-      { name: 'previewHash', type: 'string' },
-      { name: 'totalEarnings', type: 'uint256' },
-      { name: 'totalSales', type: 'uint256' }
-    ]
+      {
+        components: [
+          { internalType: 'uint256', name: 'id', type: 'uint256' },
+          { internalType: 'string', name: 'title', type: 'string' },
+          { internalType: 'string', name: 'description', type: 'string' },
+          { internalType: 'uint8', name: 'contentType', type: 'uint8' },
+          { internalType: 'string', name: 'ipfsHash', type: 'string' },
+          { internalType: 'string', name: 'embedUrl', type: 'string' },
+          { internalType: 'uint256', name: 'price', type: 'uint256' },
+          { internalType: 'address', name: 'creator', type: 'address' },
+          { internalType: 'bool', name: 'isActive', type: 'bool' },
+          { internalType: 'uint256', name: 'createdAt', type: 'uint256' },
+          { internalType: 'string', name: 'previewHash', type: 'string' },
+          { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
+          { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
+        ],
+        internalType: 'struct AccessUnlock.ContentItem',
+        name: '',
+        type: 'tuple',
+      },
+    ],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
-    name: 'hasAccess',
-    type: 'function',
-    stateMutability: 'view',
-    inputs: [
-      { name: '_user', type: 'address' },
-      { name: '_contentId', type: 'uint256' }
+    inputs: [{ internalType: 'address', name: '_creator', type: 'address' }],
+    name: 'getCreatorStats',
+    outputs: [
+      {
+        components: [
+          { internalType: 'uint256', name: 'totalEarnings', type: 'uint256' },
+          { internalType: 'uint256', name: 'totalSales', type: 'uint256' },
+          { internalType: 'uint256', name: 'activeContent', type: 'uint256' },
+          { internalType: 'uint256', name: 'lifetimeEarnings', type: 'uint256' },
+        ],
+        internalType: 'struct AccessUnlock.CreatorStats',
+        name: '',
+        type: 'tuple',
+      },
     ],
-    outputs: [{ name: '', type: 'bool' }]
+    stateMutability: 'view',
+    type: 'function',
+  },
+  {
+    inputs: [
+      { internalType: 'address', name: '_user', type: 'address' },
+      { internalType: 'uint256', name: '_contentId', type: 'uint256' },
+    ],
+    name: 'checkAccess',
+    outputs: [{ internalType: 'bool', name: '', type: 'bool' }],
+    stateMutability: 'view',
+    type: 'function',
   },
   {
     name: 'purchaseAccess',
@@ -80,6 +95,13 @@ export default function CreatorProfile() {
   const [creatorContent, setCreatorContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [displayName, setDisplayName] = useState(null);
+  
+  // Get ENS name for the creator address
+  const { data: ensName } = useEnsName({ 
+    address: creatorAddress,
+    enabled: !!creatorAddress && ethers.isAddress(creatorAddress)
+  });
 
   const mainnetClient = createPublicClient({
     chain: mainnet,
@@ -134,6 +156,15 @@ export default function CreatorProfile() {
         }
 
         setCreatorAddress(resolvedAddress);
+        
+        // Set display name - use ENS if available, otherwise use shortened address
+        if (creatorName.endsWith('.eth')) {
+          setDisplayName(creatorName);
+        } else if (ethers.isAddress(creatorName)) {
+          setDisplayName(`${creatorName.slice(0, 6)}...${creatorName.slice(-4)}`);
+        } else {
+          setDisplayName(creatorName);
+        }
       } catch (err) {
         console.error("Creator resolution failed:", err);
         console.error("Error details:", {
@@ -150,11 +181,26 @@ export default function CreatorProfile() {
       resolveCreator();
     }
   }, [params.creatorname, publicClient]);
+  
+  // Update display name when ENS is resolved
+  useEffect(() => {
+    if (ensName && creatorAddress) {
+      setDisplayName(ensName);
+    } else if (creatorAddress && !displayName) {
+      setDisplayName(`${creatorAddress.slice(0, 6)}...${creatorAddress.slice(-4)}`);
+    }
+  }, [ensName, creatorAddress]);
 
   // Fetch creator data
   useEffect(() => {
     const fetchCreatorData = async () => {
-      if (!creatorAddress || !publicClient) return;
+      if (!creatorAddress || !publicClient || !CONTRACT_ADDRESS) {
+        if (!CONTRACT_ADDRESS) {
+          setError("Contract address not configured");
+        }
+        setLoading(false);
+        return;
+      }
 
       try {
         const contract = {
@@ -162,10 +208,10 @@ export default function CreatorProfile() {
           abi: ABI,
         };
 
-        let stats, contentIds;
+        let stats;
 
         try {
-          // Get creator stats with fallback for empty data
+          // Get creator stats - returns a struct object, not an array
           stats = await publicClient.readContract({
             ...contract,
             functionName: 'getCreatorStats',
@@ -174,91 +220,115 @@ export default function CreatorProfile() {
           
           console.log("Creator stats:", stats);
           
+          // Handle struct object (not array)
+          const statsObj = stats;
+          setCreatorStats({
+            totalEarnings: statsObj.totalEarnings || BigInt(0),
+            totalSales: statsObj.totalSales || BigInt(0),
+            activeContent: statsObj.activeContent || BigInt(0),
+            lifetimeEarnings: statsObj.lifetimeEarnings || BigInt(0),
+          });
+          
         } catch (statsError) {
           console.warn("No creator stats found, using defaults:", statsError.message);
           // Use default values if no stats exist
-          stats = [BigInt(0), BigInt(0), BigInt(0), BigInt(0)];
-        }
-
-        setCreatorStats({
-          totalEarnings: stats[0] || BigInt(0),
-          totalSales: stats[1] || BigInt(0),
-          activeContent: stats[2] || BigInt(0),
-          lifetimeEarnings: stats[3] || BigInt(0),
-        });
-
-        try {
-          // Get creator's content IDs with fallback
-          contentIds = await publicClient.readContract({
-            ...contract,
-            functionName: 'getUserContent',
-            args: [creatorAddress],
+          setCreatorStats({
+            totalEarnings: BigInt(0),
+            totalSales: BigInt(0),
+            activeContent: BigInt(0),
+            lifetimeEarnings: BigInt(0),
           });
-          
-          console.log("Content IDs:", contentIds);
-          
-        } catch (contentError) {
-          console.warn("No content found for creator:", contentError.message);
-          contentIds = []; // Empty array if no content
         }
 
-        // Only fetch content details if there are content IDs
-        if (contentIds && contentIds.length > 0) {
-          try {
-            // Fetch detailed content info
-            const contentDetails = await Promise.all(
-              contentIds.map(async (id) => {
-                try {
-                  const content = await publicClient.readContract({
-                    ...contract,
-                    functionName: 'getContent',
-                    args: [id],
-                  });
+        // Fetch all content and filter by creator (same approach as dashboard)
+        try {
+          // Get total content count
+          const totalContent = await publicClient.readContract({
+            ...contract,
+            functionName: 'getTotalContent',
+          });
 
-                  let hasUserAccess = false;
-                  if (isConnected && userAddress) {
-                    try {
-                      hasUserAccess = await publicClient.readContract({
-                        ...contract,
-                        functionName: 'hasAccess',
-                        args: [userAddress, id],
-                      });
-                    } catch (accessError) {
-                      console.warn(`Could not check access for content ${id}:`, accessError.message);
-                    }
-                  }
-
-                  return {
-                    id: content[0],
-                    title: content[1],
-                    description: content[2],
-                    contentType: content[3],
-                    ipfsHash: content[4],
-                    embedUrl: content[5],
-                    price: content[6],
-                    creator: content[7],
-                    isActive: content[8],
-                    createdAt: content[9],
-                    previewHash: content[10],
-                    totalEarnings: content[11],
-                    totalSales: content[12],
-                    hasAccess: hasUserAccess,
-                  };
-                } catch (contentDetailError) {
-                  console.warn(`Could not fetch content ${id}:`, contentDetailError.message);
-                  return null;
-                }
-              })
-            );
-
-            // Filter out null entries and inactive content
-            setCreatorContent(contentDetails.filter(content => content && content.isActive));
-          } catch (contentDetailsError) {
-            console.warn("Could not fetch content details:", contentDetailsError.message);
+          if (totalContent === 0n) {
             setCreatorContent([]);
+            setLoading(false);
+            return;
           }
-        } else {
-          setCreatorContent([]); // No content to display
+
+          // Fetch all content items
+          const contentPromises = [];
+          for (let i = 1; i <= Number(totalContent); i++) {
+            contentPromises.push(
+              publicClient.readContract({
+                ...contract,
+                functionName: 'getContent',
+                args: [BigInt(i)],
+              }).catch(() => null)
+            );
+          }
+
+          const contentResults = await Promise.all(contentPromises);
+          
+          // Filter content by creator and format
+          const creatorContentList = [];
+          for (let i = 0; i < contentResults.length; i++) {
+            const content = contentResults[i];
+            if (!content) continue;
+
+            // Handle struct object
+            const {
+              id,
+              title,
+              description,
+              contentType,
+              ipfsHash,
+              embedUrl,
+              price,
+              creator,
+              isActive,
+              createdAt,
+              previewHash,
+              totalEarnings,
+              totalSales,
+            } = content;
+
+            // Only include active content from this creator
+            if (isActive && creator.toLowerCase() === creatorAddress.toLowerCase()) {
+              let hasUserAccess = false;
+              if (isConnected && userAddress) {
+                try {
+                  hasUserAccess = await publicClient.readContract({
+                    ...contract,
+                    functionName: 'checkAccess',
+                    args: [userAddress, BigInt(id)],
+                  });
+                } catch (accessError) {
+                  console.warn(`Could not check access for content ${id}:`, accessError.message);
+                }
+              }
+
+              creatorContentList.push({
+                id: Number(id),
+                title,
+                description,
+                contentType: Number(contentType),
+                ipfsHash,
+                embedUrl,
+                price: price, // Keep as BigInt for purchase, format for display
+                creator,
+                isActive,
+                createdAt,
+                previewHash,
+                totalEarnings,
+                totalSales,
+                hasAccess: hasUserAccess,
+              });
+            }
+          }
+
+          setCreatorContent(creatorContentList);
+        } catch (contentError) {
+          console.warn("Error fetching content:", contentError.message);
+          setCreatorContent([]);
         }
 
         setLoading(false);
@@ -272,7 +342,7 @@ export default function CreatorProfile() {
         });
         
         // Show more specific error
-        if (err.message?.includes("CONTRACT_ADDRESS")) {
+        if (!CONTRACT_ADDRESS) {
           setError("Contract address not configured properly");
         } else if (err.message?.includes("network")) {
           setError("Network error - make sure you're on the right chain");
@@ -287,7 +357,23 @@ export default function CreatorProfile() {
   }, [creatorAddress, publicClient, isConnected, userAddress]);
 
   const formatEther = (wei) => {
-    return ethers.formatEther(wei.toString());
+    if (!wei) return '0.0000';
+    try {
+      const formatted = ethers.formatEther(wei.toString());
+      const num = parseFloat(formatted);
+      // Format to 4 decimal places, but remove trailing zeros
+      const result = num.toFixed(4).replace(/\.?0+$/, '');
+      return result || '0';
+    } catch (error) {
+      console.error('Error formatting ether:', error);
+      return '0.0000';
+    }
+  };
+  
+  const formatAddress = (address) => {
+    if (!address) return '';
+    if (address.length <= 10) return address;
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
   const getContentTypeLabel = (type) => {
@@ -371,22 +457,30 @@ export default function CreatorProfile() {
             <div className="mb-6 lg:mb-0">
               <div className="flex items-center mb-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mr-4">
-                  <span className="text-white text-2xl">👤</span>
+                  <span className="text-white text-xl font-bold">
+                    {ensName 
+                      ? ensName.charAt(0).toUpperCase() 
+                      : creatorAddress 
+                        ? creatorAddress.charAt(2).toUpperCase() 
+                        : params.creatorname?.charAt(0)?.toUpperCase() || 'C'}
+                  </span>
                 </div>
                 <div>
                   <h1 className="text-4xl font-bold text-gray-900 mb-1">
-                    {params.creatorname}
+                    {displayName || params.creatorname}
                   </h1>
-                  <div className="flex items-center">
+                  <div className="flex items-center mb-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
                     <span className="text-sm text-gray-500">Active Creator</span>
                   </div>
+                  {creatorAddress && (
+                    <div className="bg-gray-100 rounded-lg px-3 py-1.5 inline-block">
+                      <p className="text-gray-600 text-xs font-mono">
+                        {creatorAddress.slice(0, 6)}...{creatorAddress.slice(-4)}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
-              <div className="bg-gray-100 rounded-lg p-3 inline-block">
-                <p className="text-gray-600 text-sm font-mono">
-                  {creatorAddress}
-                </p>
               </div>
             </div>
             
@@ -395,7 +489,7 @@ export default function CreatorProfile() {
               <div className="text-center lg:text-right">
                 <div className="bg-blue-50 rounded-2xl p-4 mb-2">
                   <div className="text-3xl font-bold text-blue-600">
-                    {creatorStats?.totalSales?.toString() || '0'}
+                    {creatorStats?.totalSales ? Number(creatorStats.totalSales).toString() : '0'}
                   </div>
                 </div>
                 <div className="text-sm font-medium text-gray-600">Supporters</div>
@@ -403,7 +497,7 @@ export default function CreatorProfile() {
               <div className="text-center lg:text-right">
                 <div className="bg-green-50 rounded-2xl p-4 mb-2">
                   <div className="text-3xl font-bold text-green-600">
-                    {creatorStats?.activeContent?.toString() || '0'}
+                    {creatorStats?.activeContent ? Number(creatorStats.activeContent).toString() : '0'}
                   </div>
                 </div>
                 <div className="text-sm font-medium text-gray-600">Content Items</div>
@@ -411,7 +505,7 @@ export default function CreatorProfile() {
               <div className="text-center lg:text-right">
                 <div className="bg-purple-50 rounded-2xl p-4 mb-2">
                   <div className="text-3xl font-bold text-purple-600">
-                    {formatEther(creatorStats?.lifetimeEarnings || 0)}
+                    {creatorStats?.lifetimeEarnings ? formatEther(creatorStats.lifetimeEarnings) : '0.0000'}
                   </div>
                 </div>
                 <div className="text-sm font-medium text-gray-600">ETH Earned</div>
@@ -461,6 +555,24 @@ export default function CreatorProfile() {
 
 function ContentCard({ content, hasAccess, userAddress, isConnected }) {
   const { purchaseContent, purchasing, isSuccess } = usePurchaseContent();
+  const [showModal, setShowModal] = useState(false);
+
+  const formatEther = (wei) => {
+    if (!wei) return '0.0000';
+    try {
+      // If it's already a number (from formatted content), return formatted string
+      if (typeof wei === 'number') {
+        return wei.toFixed(4).replace(/\.?0+$/, '') || '0';
+      }
+      const formatted = ethers.formatEther(wei.toString());
+      const num = parseFloat(formatted);
+      const result = num.toFixed(4).replace(/\.?0+$/, '');
+      return result || '0';
+    } catch (error) {
+      console.error('Error formatting ether:', error);
+      return '0.0000';
+    }
+  };
 
   const handlePurchase = async () => {
     if (!isConnected) {
@@ -469,15 +581,13 @@ function ContentCard({ content, hasAccess, userAddress, isConnected }) {
     }
 
     try {
-      await purchaseContent(content.id, formatEther(content.price));
+      // Format price from BigInt to ETH string
+      const priceValue = formatEther(content.price);
+      await purchaseContent(content.id, priceValue);
     } catch (error) {
       console.error("Purchase failed:", error);
       alert("Purchase failed: " + error.message);
     }
-  };
-
-  const formatEther = (wei) => {
-    return ethers.formatEther(wei.toString());
   };
 
   const getContentTypeLabel = (type) => {
