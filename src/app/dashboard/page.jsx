@@ -3,11 +3,13 @@
 import React, { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { useRouter } from 'next/navigation';
 import ContentUpload from '../components/ContentUpload';
 
 export default function Dashboard() {
     const { address, isConnected } = useAccount();
     const [activeTab, setActiveTab] = useState('upload');
+    const router = useRouter();
 
     if (!isConnected) {
         return (
@@ -40,8 +42,14 @@ export default function Dashboard() {
                         </div>
                         <div className="flex items-center space-x-4">
                             <button
-                                onClick={() => window.location.href = '/'}
+                                onClick={() => router.push('/dashboard/content')}
                                 className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                            >
+                                Content Hub
+                            </button>
+                            <button
+                                onClick={() => router.push('/')}
+                                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-700 transition-colors"
                             >
                                 Home
                             </button>
@@ -58,6 +66,26 @@ export default function Dashboard() {
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                         Upload and monetize your exclusive content. Create gated experiences for your audience.
                     </p>
+                </div>
+
+                {/* Quick Access Card */}
+                <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+                    <div className="flex flex-col md:flex-row items-center justify-between">
+                        <div className="mb-4 md:mb-0 md:mr-6">
+                            <h2 className="text-2xl font-bold mb-2">Content Hub</h2>
+                            <p className="text-blue-100">
+                                Browse all content, discover creators, and manage your library
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => router.push('/dashboard/content')}
+                            className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
+                        >
+                            <span>🚀</span>
+                            <span>Go to Content Hub</span>
+                            <span>→</span>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Tabs */}

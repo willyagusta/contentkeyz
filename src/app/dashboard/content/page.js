@@ -1,17 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import ContentUpload from '../../components/ContentUpload';
 import ContentGallery from '../../components/ContentGallery';
 import CreatorsGallery from '../../components/CreatorsGallery';
 import { useAccount } from 'wagmi';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useFetchContent } from '../../../hooks/useFetchContent';
 import { useFetchCreators } from '../../../hooks/useFetchCreators';
 import { usePurchaseContent } from '../../../hooks/usePurchasesContent';
 import { useCreateContent } from '../../../hooks/useCreateContent';
 
 export default function ContentDashboard() {
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('browse');
   const { contents, userAccess, loading, refetch } = useFetchContent();
   const { creators, loading: creatorsLoading } = useFetchCreators();
@@ -63,15 +66,46 @@ export default function ContentDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">🔑</span>
+              </div>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                ContentKeyz
+              </h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => router.push('/dashboard')}
+                className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                Creator Dashboard
+              </button>
+              <button
+                onClick={() => router.push('/')}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-700 transition-colors"
+              >
+                Home
+              </button>
+              <ConnectButton />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Content Dashboard
+            Content Hub
           </h1>
           <p className="text-gray-600">
-            Upload, manage, and access premium content with IPFS storage
+            Browse, discover, and manage all content on the platform
           </p>
           {contents.length === 0 && !loading && (
             <p className="text-sm text-gray-500 mt-2">

@@ -36,7 +36,6 @@ export default function ContentModal({ content, onClose }) {
                 download
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
               >
-                <span>📥</span>
                 <span>Download PDF</span>
               </a>
             </div>
@@ -61,7 +60,6 @@ export default function ContentModal({ content, onClose }) {
                 download
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
               >
-                <span>📥</span>
                 <span>Download Video</span>
               </a>
             </div>
@@ -79,7 +77,6 @@ export default function ContentModal({ content, onClose }) {
               download
               className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2 text-lg font-semibold"
             >
-              <span>📥</span>
               <span>Download ZIP File</span>
             </a>
           </div>
@@ -100,7 +97,6 @@ export default function ContentModal({ content, onClose }) {
                 download
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
               >
-                <span>📥</span>
                 <span>Download Audio</span>
               </a>
             </div>
@@ -121,7 +117,6 @@ export default function ContentModal({ content, onClose }) {
                 download
                 className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
               >
-                <span>📥</span>
                 <span>Download Image</span>
               </a>
             </div>

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { IPFSService } from '../../utils/ipfs';
+import ContentModal from './ContentModal';
 
 const ContentTypeIcons = {
   0: '📄', // PDF
@@ -17,6 +18,7 @@ const ContentTypeIcons = {
 
 export default function ContentViewer({ content, hasAccess, onPurchase }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
   const getEmbedComponent = (content) => {
     if (!hasAccess) return null;
@@ -206,18 +208,27 @@ export default function ContentViewer({ content, hasAccess, onPurchase }) {
         ) : (
           <div className="border-t pt-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-              <p className="text-green-800">
+              <p className="text-green-800 mb-3">
                 ✅ You have access to this content!
               </p>
-            </div>
-            
-            {/* Full Content Display */}
-            <div className="content-viewer">
-              {content.contentType >= 5 ? getEmbedComponent(content) : getFileViewer(content)}
+              <button
+                onClick={() => setShowModal(true)}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+              >
+                <span>View & Download Content</span>
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Content View Modal */}
+      {showModal && hasAccess && (
+        <ContentModal 
+          content={content} 
+          onClose={() => setShowModal(false)} 
+        />
+      )}
     </div>
   );
 }
