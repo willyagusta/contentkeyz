@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import ContentUpload from '../../components/ContentUpload';
 import ContentGallery from '../../components/ContentGallery';
@@ -72,9 +73,13 @@ export default function ContentDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">🔑</span>
-              </div>
+              <Image 
+                src="/logo.png" 
+                alt="ContentKeyz Logo" 
+                width={32} 
+                height={32} 
+                className="rounded-lg"
+              />
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 ContentKeyz
               </h1>

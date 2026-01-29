@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { useParams } from "next/navigation";
 import { useAccount, usePublicClient, useEnsName, useEnsAddress } from "wagmi";
 import { ethers } from "ethers";
@@ -388,7 +389,7 @@ export default function CreatorProfile() {
           <div className="relative">
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl">🔑</span>
+              <span className="text-2xl">🦸‍♂️</span>
             </div>
           </div>
           <p className="mt-6 text-gray-600 font-medium">Loading creator profile...</p>
@@ -425,9 +426,13 @@ export default function CreatorProfile() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">🔑</span>
-              </div>
+              <Image 
+                src="/logo.png" 
+                alt="ContentKeyz Logo" 
+                width={32} 
+                height={32} 
+                className="rounded-lg"
+              />
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 ContentKeyz
               </h1>
@@ -624,7 +629,6 @@ function ContentCard({ content, hasAccess, userAddress, isConnected }) {
           <div className="text-center">
             <div className="text-5xl mb-3">{hasAccess ? '🔓' : '🔒'}</div>
             <div className="flex items-center justify-center space-x-2">
-              <span className="text-2xl">{getContentTypeIcon(content.contentType)}</span>
               <span className="text-sm font-semibold bg-white/20 px-3 py-1 rounded-full backdrop-blur-sm">
                 {getContentTypeLabel(content.contentType)}
               </span>
@@ -667,7 +671,6 @@ function ContentCard({ content, hasAccess, userAddress, isConnected }) {
             className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <span className="flex items-center justify-center space-x-2">
-              <span>👁️</span>
               <span>View Content</span>
             </span>
           </button>

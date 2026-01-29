@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useRouter } from 'next/navigation';
@@ -16,7 +17,7 @@ export default function Dashboard() {
             <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
                 <div className="text-center max-w-md mx-auto p-8">
                     <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                        <span className="text-white text-2xl">🔑</span>
+                        <span className="text-white text-2xl">🦸‍♂️</span>
                     </div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-4">Creator Dashboard</h1>
                     <p className="text-gray-600 mb-8">Connect your wallet to access the creator dashboard and start monetizing your content.</p>
@@ -33,9 +34,13 @@ export default function Dashboard() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center py-4">
                         <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">🔑</span>
-                            </div>
+                            <Image 
+                                src="/logo.png" 
+                                alt="ContentKeyz Logo" 
+                                width={32} 
+                                height={32} 
+                                className="rounded-lg"
+                            />
                             <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                                 ContentKeyz
                             </h1>
@@ -81,7 +86,6 @@ export default function Dashboard() {
                             onClick={() => router.push('/dashboard/content')}
                             className="bg-white text-blue-600 px-6 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2"
                         >
-                            <span>🚀</span>
                             <span>Go to Content Hub</span>
                             <span>→</span>
                         </button>
@@ -100,7 +104,7 @@ export default function Dashboard() {
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                             >
-                                📤 Upload Content
+                                Upload Content
                             </button>
                             <button
                                 onClick={() => setActiveTab('analytics')}
@@ -110,7 +114,7 @@ export default function Dashboard() {
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                             >
-                                📊 Analytics
+                                Analytics
                             </button>
                             <button
                                 onClick={() => setActiveTab('settings')}
@@ -120,7 +124,7 @@ export default function Dashboard() {
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                 }`}
                             >
-                                ⚙️ Settings
+                                Settings
                             </button>
                         </nav>
                     </div>

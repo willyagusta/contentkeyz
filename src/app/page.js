@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useEnsName } from "wagmi";
 import { useRouter } from "next/navigation";
@@ -17,9 +18,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">🔑</span>
-              </div>
+              <Image 
+                src="/logo.png" 
+                alt="ContentKeyz Logo" 
+                width={50} 
+                height={32} 
+                className="rounded-lg"
+              />
               <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 ContentKeyz
               </h1>
@@ -44,7 +49,7 @@ export default function Home() {
         <div className="text-center">
           <div className="mb-8">
             <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium mb-6">
-              🚀 Decentralized Content Monetization Platform
+              Decentralized Content Monetization Platform
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               Unlock Your
@@ -88,7 +93,13 @@ export default function Home() {
         <div className="mt-24 grid md:grid-cols-3 gap-8">
           <div className="text-center p-6">
             <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🔒</span>
+              <Image 
+                  src="/gate.png" 
+                  alt="Gate Icon" 
+                  width={32} 
+                  height={32} 
+                  className="rounded-lg"
+                />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Gated Content</h3>
             <p className="text-gray-600">
@@ -98,7 +109,13 @@ export default function Home() {
           
           <div className="text-center p-6">
             <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">💎</span>
+              <Image 
+                  src="/nftimg.png" 
+                  alt="Gate Icon" 
+                  width={32} 
+                  height={32} 
+                  className="rounded-lg"
+                />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">NFT Integration</h3>
             <p className="text-gray-600">
@@ -108,7 +125,13 @@ export default function Home() {
           
           <div className="text-center p-6">
             <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🌐</span>
+            <Image 
+                  src="/decen.png" 
+                  alt="Gate Icon" 
+                  width={32} 
+                  height={32} 
+                  className="rounded-lg"
+                />
             </div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Decentralized</h3>
             <p className="text-gray-600">
@@ -126,7 +149,9 @@ export default function Home() {
             <p className="text-gray-600 mb-8">
               Connect your wallet to begin your creator journey
             </p>
-            <ConnectButton />
+            <div className="flex justify-center">
+              <ConnectButton />
+            </div>
           </div>
         )}
       </main>
