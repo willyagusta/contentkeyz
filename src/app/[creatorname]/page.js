@@ -4,8 +4,10 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useParams, useSearchParams } from "next/navigation";
 import { useAccount, usePublicClient, useEnsName, useEnsAddress } from "wagmi";
+import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
 import { usePurchaseContent } from '@/hooks/usePurchasesContent';
+import { useCreatorEarnings } from '@/hooks/useCreatorEarnings';
 import { createPublicClient, http } from 'viem';
 import { mainnet } from 'viem/chains';
 import ContentModal from '../components/ContentModal';
@@ -89,7 +91,9 @@ const ABI = [
 export default function CreatorProfile() {
   const params = useParams();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { address: userAddress, isConnected } = useAccount();
+  const { data: userEnsName } = useEnsName({ address: userAddress });
   const publicClient = usePublicClient();
 
   const [creatorAddress, setCreatorAddress] = useState(null);
@@ -99,6 +103,10 @@ export default function CreatorProfile() {
   const [error, setError] = useState(null);
   const [displayName, setDisplayName] = useState(null);
   const [selectedContentId, setSelectedContentId] = useState(null);
+  
+  // Get earnings for the creator (only if viewing own profile)
+  const isOwnProfile = userAddress && creatorAddress && userAddress.toLowerCase() === creatorAddress.toLowerCase();
+  const { earnings, loading: earningsLoading, withdrawing, withdraw, refetch: refetchEarnings } = useCreatorEarnings();
   
   // Get ENS name for the creator address
   const { data: ensName } = useEnsName({ 
@@ -455,13 +463,21 @@ export default function CreatorProfile() {
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
                 unlockr.xyz/{params.creatorname}
               </div>
-              {isConnected && (
-                <button
-                  onClick={() => window.location.href = '/dashboard'}
-                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  Dashboard
-                </button>
+              {isConnected && userAddress && (
+                <>
+                  <button
+                    onClick={() => router.push(`/${userEnsName || userAddress}`)}
+                    className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    Dashboard
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -531,6 +547,56 @@ export default function CreatorProfile() {
             </div>
           </div>
         </div>
+
+        {/* Earnings Card - Only show if viewing own profile */}
+        {isOwnProfile && (
+          <div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl shadow-xl p-8 mb-8 text-white">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <div className="mb-4 md:mb-0 md:mr-6">
+                <h2 className="text-2xl font-bold mb-2">Available Earnings</h2>
+                <p className="text-emerald-100 mb-4">
+                  Balance held by the contract
+                </p>
+                {earningsLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                    <span className="text-lg">Loading...</span>
+                  </div>
+                ) : (
+                  <div className="text-4xl font-bold">
+                    {earnings.toFixed(4)} ETH
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={async () => {
+                  try {
+                    await withdraw();
+                    alert('Withdrawal successful!');
+                    // Refresh earnings after withdrawal
+                    await refetchEarnings();
+                  } catch (error) {
+                    alert('Withdrawal failed: ' + (error.message || error.toString()));
+                  }
+                }}
+                disabled={earningsLoading || withdrawing || earnings === 0}
+                className="bg-white text-emerald-600 px-6 py-3 rounded-xl font-semibold hover:bg-emerald-50 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {withdrawing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-600 border-t-transparent"></div>
+                    <span>Withdrawing...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Withdraw</span>
+                    <span>→</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content Grid */}
         <div className="mb-8">

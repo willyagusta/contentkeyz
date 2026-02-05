@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
-import { useAccount, usePublicClient } from "wagmi";
+import { useAccount, usePublicClient, useEnsName } from "wagmi";
 import { ethers } from "ethers";
 import { usePurchaseContent } from "@/hooks/usePurchasesContent";
 import ContentModal from "../../components/ContentModal";
@@ -76,6 +76,7 @@ export default function ContentDetailPage() {
   const router = useRouter();
   const publicClient = usePublicClient();
   const { address: userAddress, isConnected } = useAccount();
+  const { data: userEnsName } = useEnsName({ address: userAddress });
   const { purchaseContent, purchasing } = usePurchaseContent();
 
   const [content, setContent] = useState(null);
@@ -287,6 +288,14 @@ export default function ContentDetailPage() {
               </h1>
             </div>
             <div className="flex items-center space-x-3">
+              {isConnected && userAddress && (
+                <button
+                  onClick={() => router.push(`/${userEnsName || userAddress}`)}
+                  className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                >
+                  My Profile
+                </button>
+              )}
               <button
                 onClick={() => router.back()}
                 className="px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-800"

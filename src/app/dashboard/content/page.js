@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import ContentUpload from '../../components/ContentUpload';
 import ContentGallery from '../../components/ContentGallery';
 import CreatorsGallery from '../../components/CreatorsGallery';
-import { useAccount } from 'wagmi';
+import { useAccount, useEnsName } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useFetchContent } from '../../../hooks/useFetchContent';
 import { useFetchCreators } from '../../../hooks/useFetchCreators';
@@ -15,6 +15,7 @@ import { useCreateContent } from '../../../hooks/useCreateContent';
 
 export default function ContentDashboard() {
   const { address, isConnected } = useAccount();
+  const { data: ensName } = useEnsName({ address });
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('browse');
   const { contents, userAccess, loading, refetch } = useFetchContent();
@@ -85,6 +86,14 @@ export default function ContentDashboard() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
+              {address && (
+                <button
+                  onClick={() => router.push(`/${ensName || address}`)}
+                  className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                >
+                  My Profile
+                </button>
+              )}
               <button
                 onClick={() => router.push('/dashboard')}
                 className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"

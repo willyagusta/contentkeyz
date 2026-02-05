@@ -30,13 +30,21 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              {isConnected && (
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
-                >
-                  Dashboard
-                </button>
+              {isConnected && address && (
+                <>
+                  <button
+                    onClick={() => router.push(`/${ensName || address}`)}
+                    className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                  >
+                    My Profile
+                  </button>
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    Dashboard
+                  </button>
+                </>
               )}
               <ConnectButton />
             </div>

@@ -2,13 +2,14 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { useAccount } from 'wagmi';
+import { useAccount, useEnsName } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useRouter } from 'next/navigation';
 import ContentUpload from '../components/ContentUpload';
 
 export default function Dashboard() {
     const { address, isConnected } = useAccount();
+    const { data: ensName } = useEnsName({ address });
     const [activeTab, setActiveTab] = useState('upload');
     const router = useRouter();
 
@@ -46,6 +47,14 @@ export default function Dashboard() {
                             </h1>
                         </div>
                         <div className="flex items-center space-x-4">
+                            {address && (
+                                <button
+                                    onClick={() => router.push(`/${ensName || address}`)}
+                                    className="px-4 py-2 text-sm font-medium text-purple-600 hover:text-purple-700 transition-colors"
+                                >
+                                    My Profile
+                                </button>
+                            )}
                             <button
                                 onClick={() => router.push('/dashboard/content')}
                                 className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
