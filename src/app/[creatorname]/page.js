@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useAccount, usePublicClient, useEnsName, useEnsAddress } from "wagmi";
 import { ethers } from "ethers";
 import { usePurchaseContent } from '@/hooks/usePurchasesContent';
@@ -88,6 +88,7 @@ const ABI = [
 
 export default function CreatorProfile() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const { address: userAddress, isConnected } = useAccount();
   const publicClient = usePublicClient();
 
@@ -97,6 +98,7 @@ export default function CreatorProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [displayName, setDisplayName] = useState(null);
+  const [selectedContentId, setSelectedContentId] = useState(null);
   
   // Get ENS name for the creator address
   const { data: ensName } = useEnsName({ 
@@ -130,6 +132,17 @@ export default function CreatorProfile() {
       testENS();
     }
   }, [publicClient]);
+
+  // Read selected content ID from URL (for deep links)
+  useEffect(() => {
+    if (!searchParams) return;
+    const id = searchParams.get('contentId');
+    if (id) {
+      setSelectedContentId(id);
+    } else {
+      setSelectedContentId(null);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const resolveCreator = async () => {
@@ -548,6 +561,7 @@ export default function CreatorProfile() {
                   hasAccess={content.hasAccess}
                   userAddress={userAddress}
                   isConnected={isConnected}
+                  selectedContentId={selectedContentId}
                 />
               ))}
             </div>
@@ -558,9 +572,17 @@ export default function CreatorProfile() {
   );
 }
 
-function ContentCard({ content, hasAccess, userAddress, isConnected }) {
+function ContentCard({ content, hasAccess, userAddress, isConnected, selectedContentId }) {
   const { purchaseContent, purchasing, isSuccess } = usePurchaseContent();
   const [showModal, setShowModal] = useState(false);
+
+  // Auto-open modal when coming from a shareable deep link and user has access
+  useEffect(() => {
+    if (!hasAccess || !selectedContentId) return;
+    if (String(content.id) === String(selectedContentId)) {
+      setShowModal(true);
+    }
+  }, [hasAccess, selectedContentId, content.id]);
 
   const formatEther = (wei) => {
     if (!wei) return '0.0000';

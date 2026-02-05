@@ -19,6 +19,8 @@ const ContentTypeIcons = {
 export default function ContentViewer({ content, hasAccess, onPurchase }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
   const getEmbedComponent = (content) => {
     if (!hasAccess) return null;
@@ -139,6 +141,42 @@ export default function ContentViewer({ content, hasAccess, onPurchase }) {
     }
   };
 
+  const handleCopyShareLink = async () => {
+    try {
+      setCopying(true);
+
+      const origin =
+        typeof window !== 'undefined' && window.location.origin
+          ? window.location.origin
+          : '';
+
+      // Use dedicated content detail route for shareable links
+      const shareUrl = `${origin}/content/${content.id}`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(shareUrl);
+      } else {
+        // Fallback for older browsers
+        const textarea = document.createElement('textarea');
+        textarea.value = shareUrl;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2500);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      alert('Unable to copy link. Please try again.');
+    } finally {
+      setCopying(false);
+    }
+  };
+
   const getPreviewContent = () => {
     if (content.previewHash) {
       return (
@@ -206,17 +244,32 @@ export default function ContentViewer({ content, hasAccess, onPurchase }) {
             </button>
           </div>
         ) : (
-          <div className="border-t pt-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+          <div className="border-t pt-4 space-y-3">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-green-800 mb-3">
                 ✅ You have access to this content!
               </p>
-              <button
-                onClick={() => setShowModal(true)}
-                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
-              >
-                <span>View & Download Content</span>
-              </button>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 space-y-3 sm:space-y-0">
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center space-x-2"
+                >
+                  <span>View & Download Content</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyShareLink}
+                  disabled={copying}
+                  className="w-full sm:w-auto border border-green-500 text-green-700 hover:bg-green-50 disabled:opacity-60 disabled:cursor-not-allowed rounded-lg px-4 py-2 text-sm font-medium flex items-center justify-center space-x-2"
+                >
+                  <span>{copying ? 'Copying...' : 'Copy Share Link'}</span>
+                </button>
+              </div>
+              {copySuccess && (
+                <p className="mt-2 text-xs text-green-700">
+                  Link copied! Share it with others to send them directly to this content.
+                </p>
+              )}
             </div>
           </div>
         )}
